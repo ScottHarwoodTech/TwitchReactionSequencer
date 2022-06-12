@@ -9,3 +9,8 @@ edition = "2021"
 btleplug = "0.9.2"
 tokio = { version = "1.19.2", features = ["full"]}
 uuid = "0.8.2"
+typify = "0.0.8"
+serde = "*"
+serde_json = "*"
+async-trait = "0.1.56"
+twitch-irc = "4.0.0"

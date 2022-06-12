@@ -1,0 +1,17 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "json.schemas": [
+            {
+                "fileMatch": [
+                    "src/sequences/*.json"
+                ],
+                "url": "./src/schemas/reactionSequence.json"
+            }
+        ]
+    }
+}

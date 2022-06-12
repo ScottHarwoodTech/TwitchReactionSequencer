@@ -1,0 +1,24 @@
+{
+    "id": "default",
+    "name": "default",
+    "sequence": [
+        {
+            "arguments": [],
+            "deviceActionId": "1",
+            "deviceId": "bunnyEars",
+            "id": "1"
+        },
+        {
+            "arguments": [],
+            "deviceActionId": "delay",
+            "deviceId": "timer",
+            "id": "2"
+        },
+        {
+            "arguments": [],
+            "deviceActionId": "1",
+            "deviceId": "bunnyEars",
+            "id": "1"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/output/schema",
+    "$id": "https://github.com/ScottHarwoodTech/TwitchReactionSequencer/src/schemas/reactionSequence.json",
+    "title": "ReactionSequence",
+    "description": "A sequence of actions to run when a reaction is triggered ",
+    "type": "object",
+    "required": [
+        "id",
+        "name",
+        "sequence"
+    ],
+    "properties": {
+        "id": {
+            "description": "Unique Id of reaction sequence",
+            "type": "string"
+        },
+        "name": {
+            "description": "Name of reaction sequence",
+            "type": "string"
+        },
+        "sequence": {
+            "description": "List of actions to run when reacting",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "deviceId",
+                    "deviceActionId",
+                    "arguments"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "id of step",
+                        "type": "string"
+                    },
+                    "deviceId": {
+                        "description": "id of device associated with step",
+                        "type": "string"
+                    },
+                    "deviceActionId": {
+                        "description": "id of action to perform",
+                        "type": "string"
+                    },
+                    "arguments": {
+                        "description": "Arguments to be passed to action",
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "number"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

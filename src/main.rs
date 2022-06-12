@@ -1,12 +1,13 @@
-use btleplug::api::{Central, Manager as _, Peripheral as _, ScanFilter, WriteType};
+use btleplug::api::{Central, Manager as _, Peripheral as _, ScanFilter};
 use btleplug::platform::{Adapter, Manager, Peripheral};
+use std::collections::HashMap;
 use std::error::Error;
 use std::time::Duration;
 use tokio::time;
-use uuid::Uuid;
 
-const TX_CHARACTERISTIC: &str = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
-const RX_CHARACTERISTIC: &str = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
+mod twitch;
+
+pub mod sequencer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -20,34 +21,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // notify you of new devices, for an example of that see examples/event_driven_discovery.rs
     time::sleep(Duration::from_secs(2)).await;
 
-    //    central
-    //        .add_peripheral(BDAddr::from_str_delim("EB:A0:B4:C2:82:C8").unwrap())
-    //        .await?;
-
     let mb = find_mb(&central).await.unwrap();
 
     mb.connect().await?;
     mb.discover_services().await?;
 
-    println!(
-        "Device Mac Address {}",
-        mb.properties().await.unwrap().unwrap().address
-    );
-    for s in mb.services().iter() {
-        println!("  Service uuid {}", s.uuid);
-        for c in s.characteristics.iter() {
-            println!("      Serivce characteristics {}", c.uuid);
-        }
-    }
+    // println!(
+    //     "Device Mac Address {}",
+    //     mb.properties().await.unwrap().unwrap().address
+    // );
+    // for s in mb.services().iter() {
+    //     println!("  Service uuid {}", s.uuid);
+    //     for c in s.characteristics.iter() {
+    //         println!("      Serivce characteristics {}", c.uuid);
+    //     }
+    // }
 
-    let chars = mb.characteristics();
-    let rx_char = chars
-        .iter()
-        .find(|c| c.uuid == Uuid::parse_str(RX_CHARACTERISTIC).unwrap())
-        .unwrap();
-    let cmd = vec![0x48, 0x31, 0x38, 0x30, 0xA];
-    mb.write(&rx_char, &cmd, WriteType::WithoutResponse).await?;
-    time::sleep(Duration::from_secs(2)).await;
+    let data = include_str!("./sequences/default.json");
+
+    let sequencer: sequencer::reaction_sequence::ReactionSequence = serde_json::from_str(data)?;
+    let device_set = setup_devices(mb);
+    sequencer.play(&device_set).await;
+    let controller = twitch::TwitchController::new("lanasidhe");
+
+    controller.start().await;
 
     Ok(())
 }
@@ -67,4 +64,13 @@ async fn find_mb(central: &Adapter) -> Option<Peripheral> {
     }
 
     None
+}
+
+fn setup_devices(mb: Peripheral) -> HashMap<&'static str, sequencer::device::Device> {
+    let device_set: HashMap<&'static str, sequencer::device::Device> = HashMap::new();
+
+    let device_set = sequencer::devices::bunny_ears::setup(device_set, mb);
+    let device_set = sequencer::devices::timer::setup(device_set);
+
+    return device_set;
 }
