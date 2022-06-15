@@ -13,4 +13,6 @@ typify = "0.0.8"
 serde = "*"
 serde_json = "*"
 async-trait = "0.1.56"
-twitch-irc = "4.0.0"
+twitch_api2 = {version = "0.6.1", features=["pubsub"]}
+twitch_oauth2 = "0.7.0"
+websocket = "0.26.4"
