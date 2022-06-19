@@ -1,4 +1,5 @@
 use crate::sequencer::device;
+
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -32,11 +33,15 @@ impl device::DeviceAction for Delay {
 }
 
 pub fn setup(
-    mut devices: HashMap<&'static str, device::Device>,
-) -> HashMap<&'static str, device::Device> {
+    mut devices: HashMap<&'static str, Box<dyn device::DeviceTrait>>,
+) -> HashMap<&'static str, Box<dyn device::DeviceTrait>> {
     devices.insert(
         DEVICE_ID,
-        device::Device::new(DEVICE_ID, DEVICE_NAME, create_actions()),
+        Box::new(device::Device::new(
+            DEVICE_ID,
+            DEVICE_NAME,
+            create_actions(),
+        )),
     );
 
     return devices;

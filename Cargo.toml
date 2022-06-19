@@ -13,6 +13,10 @@ typify = "0.0.8"
 serde = "*"
 serde_json = "*"
 async-trait = "0.1.56"
-twitch_api2 = {version = "0.6.1", features=["pubsub"]}
-twitch_oauth2 = "0.7.0"
-websocket = "0.26.4"
+twitch_api2 = {version = "0.6.1", features=["pubsub", "reqwest", "client","helix", "twitch_oauth2"]}
+reqwest = "*"
+rpassword = "*"
+tokio-tungstenite = {version = "*", features=["native-tls"]}
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+native-tls="*"
+dotenv="*"
