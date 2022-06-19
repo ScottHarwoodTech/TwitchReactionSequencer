@@ -1,3 +1,5 @@
+use crate::triggers::triggers::TriggerSource;
+use async_trait::async_trait;
 use futures_util::{future, SinkExt, StreamExt};
 use native_tls::TlsConnector;
 use pubsub::Topic;
@@ -7,13 +9,13 @@ use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 use twitch_api2::twitch_oauth2::{url, ClientId, ClientSecret, Scope, TwitchToken, UserToken};
 use twitch_api2::{pubsub, TWITCH_PUBSUB_URL};
 
-pub struct TwitchController {
+pub struct TwitchPubSub {
     target_channel: &'static str,
     user_token: UserToken,
 }
 
-impl TwitchController {
-    pub async fn new(target_channel: &'static str) -> Result<TwitchController, Box<dyn Error>> {
+impl TwitchPubSub {
+    pub async fn new(target_channel: &'static str) -> Result<TwitchPubSub, Box<dyn Error>> {
         let mut builder = UserToken::builder(
             ClientId::from(std::env::var("TWITCH_CLIENT_ID").unwrap()),
             ClientSecret::from(std::env::var("TWITCH_SECRET").unwrap()),
@@ -64,15 +66,16 @@ impl TwitchController {
             },
         }
 
-        return Ok(TwitchController {
+        return Ok(TwitchPubSub {
             target_channel: target_channel,
             user_token: user_token,
         });
     }
+}
 
-    pub async fn start(&self) -> Result<(), Box<dyn Error>> {
-        // We want to subscribe to moderator actions on channel with id 1234
-        // as if we were a user with id 4321 that is moderator on the channel.
+#[async_trait]
+impl TriggerSource for TwitchPubSub {
+    async fn watch(&self) -> Result<(), Box<dyn Error>> {
         let channel_points_actions = pubsub::channel_points::ChannelPointsChannelV1 {
             channel_id: 111846172, // ScootScoot2000: 216053282,
         }
@@ -105,6 +108,6 @@ impl TwitchController {
 
         fut.await;
 
-        Ok(())
+        return Ok(());
     }
 }

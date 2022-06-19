@@ -19,7 +19,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         sequence_id: String::from("empty"),
     });
 
-    let join_handle = sequencer::watch_queue(trigger_sequence_reciever);
+    let sequencer_queue = sequencer::watch_queue(trigger_sequence_reciever);
+
+    let triggers = triggers::get_available_trigger_sources().await?;
+    let trigger_manager = triggers::trigger_manager(triggers);
 
     trigger_sequence
         .send(sequencer::QueueEvent {
@@ -27,7 +30,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
         .unwrap();
 
-    join_handle.await.unwrap();
+    trigger_manager.await.unwrap();
+    sequencer_queue.await.unwrap();
 
     Ok(())
 }
