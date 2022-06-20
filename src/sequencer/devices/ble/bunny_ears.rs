@@ -85,7 +85,7 @@ pub async fn setup(
     peripherals: Vec<Peripheral>,
 ) -> HashMap<&'static str, Box<dyn DeviceTrait>> {
     let mb = find_mb(peripherals).await.unwrap();
-    println!("Foudn mb");
+    println!("found mb");
     devices.insert(
         DEVICE_ID,
         Box::new(ble_device::BleDevice::new(

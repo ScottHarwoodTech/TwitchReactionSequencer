@@ -37,13 +37,14 @@ pub struct QueueEvent {
     pub sequence_id: String,
 }
 
+use device::DeviceTrait;
 use std::error::Error;
 
 pub async fn watch_queue(
+    device_set: HashMap<&'static str, Box<dyn DeviceTrait>>,
     mut queue_reciever: watch::Receiver<QueueEvent>,
 ) -> Result<(), Box<dyn Error>> {
-    let device_set = devices::setup_devices().await?;
-
+    print!("Started queue reciever");
     while queue_reciever.changed().await.is_ok() {
         println!("recieved = {:?}", *queue_reciever.borrow());
         let data = include_str!("../../sequences/default.json");

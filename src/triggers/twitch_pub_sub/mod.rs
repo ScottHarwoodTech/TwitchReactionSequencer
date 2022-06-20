@@ -1,9 +1,12 @@
+use crate::sequencer::QueueEvent;
 use crate::triggers::triggers::TriggerSource;
 use async_trait::async_trait;
 use futures_util::{future, SinkExt, StreamExt};
 use native_tls::TlsConnector;
 use pubsub::Topic;
+use rand::{distributions::Alphanumeric, Rng};
 use std::error::Error;
+use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::protocol::{Message, WebSocketConfig};
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 use twitch_api2::twitch_oauth2::{url, ClientId, ClientSecret, Scope, TwitchToken, UserToken};
@@ -64,7 +67,7 @@ impl TwitchPubSub {
                 }
                 _ => panic!("invalid url passed"),
             },
-        }
+        };
 
         return Ok(TwitchPubSub {
             target_channel: target_channel,
@@ -73,11 +76,20 @@ impl TwitchPubSub {
     }
 }
 
+fn nonce() -> String {
+    let s: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+    return s;
+}
+
 #[async_trait]
 impl TriggerSource for TwitchPubSub {
-    async fn watch(&self) -> Result<(), Box<dyn Error>> {
+    async fn watch(&self, send_trigger: Sender<QueueEvent>) -> Result<(), Box<dyn Error>> {
         let channel_points_actions = pubsub::channel_points::ChannelPointsChannelV1 {
-            channel_id: 111846172, // ScootScoot2000: 216053282,
+            channel_id: 216053282,
         }
         .into_topic();
 
@@ -85,7 +97,7 @@ impl TriggerSource for TwitchPubSub {
         let command = pubsub::listen_command(
             &[channel_points_actions],
             self.user_token.token().secret(),
-            "super se3re7 random string",
+            nonce(),
         )
         .expect("serializing failed");
 
