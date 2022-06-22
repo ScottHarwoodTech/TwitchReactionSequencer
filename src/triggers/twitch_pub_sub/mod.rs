@@ -4,21 +4,71 @@ use async_trait::async_trait;
 use futures_util::{future, SinkExt, StreamExt};
 use native_tls::TlsConnector;
 use pubsub::Topic;
-use rand::{distributions::Alphanumeric, Rng};
 use std::error::Error;
+use textnonce::TextNonce;
 use tokio::sync::mpsc::Sender;
 use tokio_tungstenite::tungstenite::protocol::{Message, WebSocketConfig};
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
-use twitch_api2::twitch_oauth2::{url, ClientId, ClientSecret, Scope, TwitchToken, UserToken};
+use twitch_api2::twitch_oauth2::{
+    url, AccessToken, ClientId, ClientSecret, RefreshToken, Scope, TwitchToken, UserToken,
+};
 use twitch_api2::{pubsub, TWITCH_PUBSUB_URL};
-
 pub struct TwitchPubSub {
     target_channel: &'static str,
     user_token: UserToken,
 }
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 
 impl TwitchPubSub {
     pub async fn new(target_channel: &'static str) -> Result<TwitchPubSub, Box<dyn Error>> {
+        let user_token = TwitchPubSub::get_user_token().await?;
+        return Ok(TwitchPubSub {
+            target_channel: target_channel,
+            user_token: user_token,
+        });
+    }
+
+    async fn get_user_token() -> Result<UserToken, Box<dyn Error>> {
+        let twitch_token = std::env::var_os("TWITCH_TOKEN");
+        let refresh_token = std::env::var_os("TWITCH_REFRESH_TOKEN");
+        let secret = std::env::var_os("TWITCH_SECRET")
+            .unwrap()
+            .into_string()
+            .unwrap();
+        let client_id = std::env::var_os("TWITCH_CLIENT_ID");
+
+        if twitch_token.is_none() || refresh_token.is_none() {
+            return Ok(TwitchPubSub::auth_flow().await.unwrap());
+        }
+
+        let (twitch_token, _, refresh_token) = twitch_api2::twitch_oauth2::refresh_token(
+            &reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .build()?,
+            &RefreshToken::new(refresh_token.unwrap().into_string().unwrap()),
+            &ClientId::new(client_id.unwrap().into_string().unwrap()),
+            &ClientSecret::new(secret.clone()),
+        )
+        .await?;
+
+        let user_token = UserToken::from_existing(
+            &reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .build()?,
+            AccessToken::new(twitch_token.into_string()),
+            RefreshToken::new(refresh_token.unwrap().into_string()),
+            ClientSecret::new(secret),
+        )
+        .await;
+
+        let user_token = user_token.unwrap();
+
+        println!("{:?}", user_token.is_elapsed());
+        return Ok(user_token);
+    }
+
+    async fn auth_flow() -> Result<UserToken, Box<dyn Error>> {
         let mut builder = UserToken::builder(
             ClientId::from(std::env::var("TWITCH_CLIENT_ID").unwrap()),
             ClientSecret::from(std::env::var("TWITCH_SECRET").unwrap()),
@@ -69,20 +119,31 @@ impl TwitchPubSub {
             },
         };
 
-        return Ok(TwitchPubSub {
-            target_channel: target_channel,
-            user_token: user_token,
-        });
-    }
-}
+        // TODO: Be Naughty and save straight into .env
+        let mut file = OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open("./.env")
+            .unwrap();
 
-fn nonce() -> String {
-    let s: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(7)
-        .map(char::from)
-        .collect();
-    return s;
+        writeln!(
+            file,
+            "{}",
+            format!("TWITCH_TOKEN=\"{}\"", user_token.clone().token().secret())
+        )?;
+
+        writeln!(
+            file,
+            "{}",
+            format!(
+                "TWITCH_REFRESH_TOKEN=\"{}\"",
+                user_token.clone().refresh_token.unwrap().into_string()
+            )
+        )?;
+
+        return Ok(user_token);
+    }
 }
 
 #[async_trait]
@@ -97,7 +158,7 @@ impl TriggerSource for TwitchPubSub {
         let command = pubsub::listen_command(
             &[channel_points_actions],
             self.user_token.token().secret(),
-            nonce(),
+            TextNonce::new().into_string().as_str(),
         )
         .expect("serializing failed");
 

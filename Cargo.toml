@@ -20,4 +20,5 @@ tokio-tungstenite = {version = "*", features=["native-tls"]}
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 native-tls="*"
 dotenv="*"
-rant="*"
+textnonce="*"
+iced="*"

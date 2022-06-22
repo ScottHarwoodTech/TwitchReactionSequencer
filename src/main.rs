@@ -2,6 +2,7 @@ use std::error::Error;
 
 mod sequencer;
 mod triggers;
+mod ui;
 mod util;
 
 use dotenv::dotenv;
@@ -11,6 +12,7 @@ use tokio::sync::watch;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
+    ui::ui();
 
     let (trigger_sequence, trigger_sequence_reciever) = watch::channel(sequencer::QueueEvent {
         sequence_id: String::from("empty"),
