@@ -23,6 +23,12 @@ pub trait DeviceAction {
     async fn action(&self, arguments: Vec<serde_json::Value>) -> ();
 }
 
+impl std::fmt::Debug for dyn DeviceAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Device Action")
+    }
+}
+
 impl DeviceTrait for Device {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
         return &self.actions;
@@ -31,4 +37,10 @@ impl DeviceTrait for Device {
 
 pub trait DeviceTrait {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>>;
+}
+
+impl std::fmt::Debug for dyn DeviceTrait {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Device Trait")
+    }
 }

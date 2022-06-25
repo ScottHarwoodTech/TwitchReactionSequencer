@@ -1,5 +1,7 @@
 mod application;
 pub mod util;
+mod sequence;
+
 
 use iced::{Application, Settings};
 
