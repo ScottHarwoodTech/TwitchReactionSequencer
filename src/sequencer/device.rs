@@ -1,7 +1,9 @@
 use async_trait::async_trait;
+use core::fmt;
 use serde_json;
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct Device {
     id: String,
     name: String,
@@ -19,28 +21,16 @@ impl Device {
 }
 
 #[async_trait]
-pub trait DeviceAction {
+pub trait DeviceAction: fmt::Debug + Send {
     async fn action(&self, arguments: Vec<serde_json::Value>) -> ();
 }
 
-impl std::fmt::Debug for dyn DeviceAction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Device Action")
-    }
+pub trait DeviceTrait: fmt::Debug + Send {
+    fn get_actions(&self) -> &HashMap<String, Rc<Box<dyn DeviceAction>>>;
 }
 
 impl DeviceTrait for Device {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
         return &self.actions;
-    }
-}
-
-pub trait DeviceTrait {
-    fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>>;
-}
-
-impl std::fmt::Debug for dyn DeviceTrait {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Device Trait")
     }
 }

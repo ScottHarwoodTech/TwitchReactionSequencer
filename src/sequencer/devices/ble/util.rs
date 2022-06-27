@@ -22,8 +22,8 @@ pub async fn get_ble_peripherals() -> Result<Vec<Peripheral>, Box<dyn Error>> {
 }
 
 pub async fn setup_ble_devices(
-    device_set: HashMap<&'static str, Box<dyn DeviceTrait>>,
-) -> Result<HashMap<&'static str, Box<dyn DeviceTrait>>, Box<dyn Error>> {
+    device_set: HashMap<String, Box<dyn DeviceTrait>>,
+) -> Result<HashMap<String, Box<dyn DeviceTrait>>, Box<dyn Error>> {
     let ble_peripharals = get_ble_peripherals().await?;
 
     let device_set = bunny_ears::setup(device_set, ble_peripharals).await;

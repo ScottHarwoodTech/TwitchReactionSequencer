@@ -14,6 +14,7 @@ use crate::sequencer::device::DeviceAction;
 
 use crate::sequencer::devices::ble::ble_device;
 
+#[derive(Debug)]
 struct LeftEar {
     id: String,
     name: String,
@@ -48,6 +49,7 @@ impl DeviceAction for LeftEar {
     }
 }
 
+#[derive(Debug)]
 struct RightEar {
     id: String,
     name: String,
@@ -81,13 +83,13 @@ impl DeviceAction for RightEar {
 }
 
 pub async fn setup(
-    mut devices: HashMap<&'static str, Box<dyn DeviceTrait>>,
+    mut devices: HashMap<String, Box<dyn DeviceTrait>>,
     peripherals: Vec<Peripheral>,
-) -> HashMap<&'static str, Box<dyn DeviceTrait>> {
+) -> HashMap<String, Box<dyn DeviceTrait>> {
     let mb = find_mb(peripherals).await.unwrap();
     println!("found mb");
     devices.insert(
-        DEVICE_ID,
+        DEVICE_ID.to_string(),
         Box::new(ble_device::BleDevice::new(
             DEVICE_ID,
             DEVICE_NAME,

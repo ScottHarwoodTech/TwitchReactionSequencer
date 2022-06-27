@@ -11,6 +11,7 @@ const DEVICE_NAME: &str = "Timer";
 const ACTION_DELAY_ID: &str = "delay";
 const ACTION_DELAY_NAME: &str = "Delay";
 
+#[derive(Debug)]
 struct Delay {
     id: String,
     name: String,
@@ -33,10 +34,10 @@ impl device::DeviceAction for Delay {
 }
 
 pub fn setup(
-    mut devices: HashMap<&'static str, Box<dyn device::DeviceTrait>>,
-) -> HashMap<&'static str, Box<dyn device::DeviceTrait>> {
+    mut devices: HashMap<String, Box<dyn device::DeviceTrait>>,
+) -> HashMap<String, Box<dyn device::DeviceTrait>> {
     devices.insert(
-        DEVICE_ID,
+        DEVICE_ID.to_string(),
         Box::new(device::Device::new(
             DEVICE_ID,
             DEVICE_NAME,

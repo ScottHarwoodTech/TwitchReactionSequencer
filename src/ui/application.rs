@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
 use crate::sequencer::device::DeviceTrait;
-use crate::sequencer::devices;
 use crate::ui::sequence;
-use iced;
-use iced::{Column, Command, Element, Text};
+use iced::{self, Text};
+use iced::{Command, Element};
 
-use super::sequence::trigger::Trigger;
 use super::sequence::Sequence;
 
 #[derive(Debug)]
@@ -61,8 +59,6 @@ impl iced::Application for Application {
     }
 
     fn view(&mut self) -> Element<Message> {
-        match self {
-            Application::Ready => self.se,
-        }
+        Text::new("hello").into()
     }
 }

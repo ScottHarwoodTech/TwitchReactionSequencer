@@ -1,6 +1,7 @@
 use crate::sequencer::device::{DeviceAction, DeviceTrait};
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct BleDevice {
     id: String,
     name: String,

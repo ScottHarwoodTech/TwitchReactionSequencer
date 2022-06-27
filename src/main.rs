@@ -12,12 +12,13 @@ use tokio::sync::watch;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
-    ui::ui();
+    let device_set = sequencer::devices::setup_devices().await?;
+    ui::ui(&device_set);
 
     let (trigger_sequence, trigger_sequence_reciever) = watch::channel(sequencer::QueueEvent {
         sequence_id: String::from("empty"),
     });
-    let device_set = sequencer::devices::setup_devices().await?;
+
     let sequencer_queue = sequencer::watch_queue(device_set, trigger_sequence_reciever);
 
     let triggers = triggers::get_available_trigger_sources().await?;

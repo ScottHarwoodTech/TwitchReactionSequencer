@@ -5,7 +5,7 @@ pub mod reaction_sequence;
 use std::collections::HashMap;
 
 impl reaction_sequence::ReactionSequence {
-    pub async fn play(&self, device_set: &HashMap<&str, Box<dyn device::DeviceTrait>>) {
+    pub async fn play(&self, device_set: &HashMap<String, Box<dyn device::DeviceTrait>>) {
         let sequence = &self.sequence;
         for method in sequence {
             let device = get_device_by_id(&device_set, &method.device_id);
@@ -24,7 +24,7 @@ impl reaction_sequence::ReactionSequence {
 }
 
 fn get_device_by_id<'a>(
-    device_set: &'a HashMap<&str, Box<dyn device::DeviceTrait>>,
+    device_set: &'a HashMap<String, Box<dyn device::DeviceTrait>>,
     id: &str,
 ) -> Option<&'a Box<dyn device::DeviceTrait>> {
     return device_set.get(id);
@@ -41,7 +41,7 @@ use device::DeviceTrait;
 use std::error::Error;
 
 pub async fn watch_queue(
-    device_set: HashMap<&'static str, Box<dyn DeviceTrait>>,
+    device_set: HashMap<String, Box<dyn DeviceTrait>>,
     mut queue_reciever: watch::Receiver<QueueEvent>,
 ) -> Result<(), Box<dyn Error>> {
     print!("Started queue reciever");
