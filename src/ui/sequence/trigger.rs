@@ -1,9 +1,8 @@
 use iced;
 use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
-use std::rc::Rc;
 
-use crate::sequencer::device::{DeviceAction, DeviceTrait};
+use crate::sequencer::device::DeviceTrait;
 
 // Drop down list of trigger sources,
 // Drop down list of actions on triggers
@@ -13,8 +12,7 @@ use crate::sequencer::device::{DeviceAction, DeviceTrait};
 #[derive(Debug, Clone)]
 pub struct Trigger {
     selected_device: Option<String>,
-    action: Rc<Box<dyn DeviceAction>>,
-    devices: HashMap<String, Rc<Box<dyn DeviceTrait>>>,
+    devices: HashMap<String, Box<dyn DeviceTrait>>,
     device_pick_list: pick_list::State<String>,
 }
 
@@ -24,8 +22,8 @@ pub enum TriggerMessage {
 }
 
 impl Trigger {
-    pub fn new(devices: &'static HashMap<String, Rc<Box<dyn DeviceTrait>>>) -> Self {
-        let action = devices
+    pub fn new(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Self {
+        let _action = devices
             .get(&String::from("timer"))
             .unwrap()
             .get_actions()
@@ -34,7 +32,6 @@ impl Trigger {
 
         Trigger {
             selected_device: Some(String::from("timer")),
-            action: Rc::new<action>,
             devices: devices.clone(),
             device_pick_list: pick_list::State::new(),
         }

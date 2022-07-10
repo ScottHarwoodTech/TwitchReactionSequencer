@@ -24,7 +24,7 @@ pub enum SequenceMessage {
 }
 
 impl Sequence {
-    pub fn new(devices: &'static HashMap<String, Box<dyn DeviceTrait>>) -> Self {
+    pub fn new(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Self {
         Sequence {
             trigger: trigger::Trigger::new(devices),
         }

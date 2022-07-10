@@ -11,7 +11,7 @@ const DEVICE_NAME: &str = "Timer";
 const ACTION_DELAY_ID: &str = "delay";
 const ACTION_DELAY_NAME: &str = "Delay";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Delay {
     id: String,
     name: String,

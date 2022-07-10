@@ -14,7 +14,7 @@ use crate::sequencer::device::DeviceAction;
 
 use crate::sequencer::devices::ble::ble_device;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct LeftEar {
     id: String,
     name: String,
@@ -49,7 +49,7 @@ impl DeviceAction for LeftEar {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct RightEar {
     id: String,
     name: String,

@@ -148,7 +148,7 @@ impl TwitchPubSub {
 
 #[async_trait]
 impl TriggerSource for TwitchPubSub {
-    async fn watch(&self, send_trigger: Sender<QueueEvent>) -> Result<(), Box<dyn Error>> {
+    async fn watch(&self, _send_trigger: Sender<QueueEvent>) -> Result<(), Box<dyn Error>> {
         let channel_points_actions = pubsub::channel_points::ChannelPointsChannelV1 {
             channel_id: 216053282,
         }

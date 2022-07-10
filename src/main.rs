@@ -13,7 +13,8 @@ use tokio::sync::watch;
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
     let device_set = sequencer::devices::setup_devices().await?;
-    ui::ui(&device_set);
+
+    ui::ui(device_set.clone());
 
     let (trigger_sequence, trigger_sequence_reciever) = watch::channel(sequencer::QueueEvent {
         sequence_id: String::from("empty"),

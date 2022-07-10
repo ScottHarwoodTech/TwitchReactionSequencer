@@ -28,22 +28,21 @@ enum LoadError {
     FormatError,
 }
 
-async fn dummy(
-    devices: &'static HashMap<String, Box<dyn DeviceTrait>>,
-) -> Result<State, LoadError> {
+async fn dummy(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Result<State, LoadError> {
     return Ok(State {
-        sequences: vec![Sequence::new(devices)],
+        sequences: vec![
+            Sequence::new(devices.clone()),
+            Sequence::new(devices.clone()),
+        ],
     });
 }
 
 impl iced::Application for Application {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = (&'static HashMap<String, Box<dyn DeviceTrait>>,);
+    type Flags = (HashMap<String, Box<dyn DeviceTrait>>,);
 
-    fn new(
-        flags: (&'static HashMap<String, Box<dyn DeviceTrait>>,),
-    ) -> (Application, Command<Message>) {
+    fn new(flags: (HashMap<String, Box<dyn DeviceTrait>>,)) -> (Application, Command<Message>) {
         (
             Application::Ready,
             Command::perform(dummy(flags.0), Message::Loaded),
@@ -54,7 +53,7 @@ impl iced::Application for Application {
         return String::from("hello world");
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, _message: Message) -> Command<Message> {
         Command::none()
     }
 
