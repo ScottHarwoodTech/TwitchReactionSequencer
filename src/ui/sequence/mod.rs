@@ -15,7 +15,7 @@ use crate::sequencer::device::DeviceTrait;
 
 #[derive(Debug, Clone)]
 pub struct Sequence {
-    trigger: trigger::Trigger,
+    pub trigger: trigger::Trigger,
 }
 
 #[derive(Debug, Clone)]

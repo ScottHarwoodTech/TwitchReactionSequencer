@@ -11,7 +11,7 @@ use crate::sequencer::device::DeviceTrait;
 // Container
 #[derive(Debug, Clone)]
 pub struct Trigger {
-    selected_device: Option<String>,
+    pub selected_device: Option<String>,
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     device_pick_list: pick_list::State<String>,
 }
