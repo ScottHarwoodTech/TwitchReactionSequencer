@@ -16,6 +16,13 @@ use crate::sequencer::device::DeviceTrait;
 #[derive(Debug, Clone)]
 pub struct Sequence {
     pub trigger: trigger::Trigger,
+
+    state: SequenceState,
+}
+
+#[derive(Debug, Clone)]
+pub enum SequenceState {
+    Ready,
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +34,16 @@ impl Sequence {
     pub fn new(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Self {
         Sequence {
             trigger: trigger::Trigger::new(devices),
+            state: SequenceState::Ready,
+        }
+    }
+
+    pub fn update(&mut self, message: SequenceMessage) {
+        match message {
+            SequenceMessage::TriggerMessage(trigger_message) => {
+                self.trigger.update(trigger_message)
+            }
+            _ => todo!(),
         }
     }
 

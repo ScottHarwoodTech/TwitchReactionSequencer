@@ -5,7 +5,7 @@ use crate::ui::sequence;
 use iced::{self, Column, Renderer, Row, Text};
 use iced::{Command, Element};
 
-use super::sequence::Sequence;
+use super::sequence::{Sequence, SequenceMessage};
 
 #[derive(Debug)]
 pub enum Application {
@@ -21,6 +21,7 @@ struct State {
 #[derive(Debug, Clone)]
 pub enum Message {
     Loaded(Result<State, LoadError>),
+    SequenceMessage(usize, SequenceMessage),
 }
 
 #[derive(Debug, Clone)]
@@ -51,7 +52,7 @@ impl iced::Application for Application {
     }
 
     fn title(&self) -> String {
-        return String::from("hello world");
+        return String::from("Twich Reaction Sequencer");
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -64,9 +65,17 @@ impl iced::Application for Application {
                 }
 
                 Message::Loaded(Err(_)) => {}
+                _ => {}
             },
 
-            Application::Ready(_state) => {}
+            Application::Ready(state) => match message {
+                Message::SequenceMessage(i, sequence_message) => {
+                    if let Some(sequence) = state.sequences.get_mut(i) {
+                        sequence.update(sequence_message);
+                    }
+                }
+                _ => {}
+            },
         }
 
         Command::none()
@@ -76,19 +85,25 @@ impl iced::Application for Application {
         match self {
             Application::Loading => Text::new("title").into(),
             Application::Ready(state) => {
-                let sequences: Element<_> = state
+                let c = Column::new().max_width(800).spacing(20);
+
+                let seqs: Element<_> = state
                     .sequences
-                    .iter()
-                    .fold(Row::new().spacing(20), |row: Row<_>, sequence| {
-                        row.push(Text::new(sequence.trigger.selected_device.clone().unwrap()))
-                    })
+                    .iter_mut()
+                    .enumerate()
+                    .fold(
+                        Column::new().spacing(20).padding(10),
+                        |column: Column<_>, (i, sequence)| {
+                            column.push(
+                                sequence
+                                    .view()
+                                    .map(move |message| Message::SequenceMessage(i, message)),
+                            )
+                        },
+                    )
                     .into();
 
-                Column::new()
-                    .max_width(800)
-                    .spacing(20)
-                    .push(sequences)
-                    .into()
+                return c.push(seqs).into();
             }
         }
     }
