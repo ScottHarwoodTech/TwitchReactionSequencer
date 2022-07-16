@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use futures_util::{future, SinkExt, StreamExt};
 use native_tls::TlsConnector;
 use pubsub::Topic;
+use std::collections::HashMap;
 use std::error::Error;
 use textnonce::TextNonce;
 use tokio::sync::mpsc::Sender;
@@ -13,12 +14,17 @@ use twitch_api2::twitch_oauth2::{
     url, AccessToken, ClientId, ClientSecret, RefreshToken, Scope, TwitchToken, UserToken,
 };
 use twitch_api2::{pubsub, TWITCH_PUBSUB_URL};
+
+#[derive(Debug, Clone)]
 pub struct TwitchPubSub {
     target_channel: &'static str,
     user_token: UserToken,
+    trigger_events: HashMap<String, Box<dyn TriggerEvent>>,
 }
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+
+use super::triggers::TriggerEvent;
 
 impl TwitchPubSub {
     pub async fn new(target_channel: &'static str) -> Result<TwitchPubSub, Box<dyn Error>> {
@@ -26,6 +32,7 @@ impl TwitchPubSub {
         return Ok(TwitchPubSub {
             target_channel: target_channel,
             user_token: user_token,
+            trigger_events: HashMap::new(),
         });
     }
 
@@ -182,5 +189,9 @@ impl TriggerSource for TwitchPubSub {
         fut.await;
 
         return Ok(());
+    }
+
+    fn get_events(&self) -> &HashMap<String, Box<dyn TriggerEvent>> {
+        return &self.trigger_events;
     }
 }

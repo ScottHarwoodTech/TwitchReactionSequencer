@@ -1,9 +1,13 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use crate::sequencer::device::DeviceTrait;
+use crate::triggers::triggers::TriggerSource;
 use crate::ui::sequence;
-use iced::{self, Column, Renderer, Row, Text};
+use iced::{self, scrollable, Column, Text};
 use iced::{Command, Element};
+use iced::{Rule, Scrollable};
+use tokio::time;
 
 use super::sequence::{Sequence, SequenceMessage};
 
@@ -14,8 +18,9 @@ pub enum Application {
 }
 
 #[derive(Debug, Clone)]
-struct State {
+pub struct State {
     sequences: Vec<sequence::Sequence>,
+    scroll: scrollable::State,
 }
 
 #[derive(Debug, Clone)]
@@ -25,34 +30,52 @@ pub enum Message {
 }
 
 #[derive(Debug, Clone)]
-enum LoadError {
+pub enum LoadError {
     FileError,
     FormatError,
 }
 
-async fn dummy(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Result<State, LoadError> {
+async fn dummy(
+    devices: HashMap<String, Box<dyn DeviceTrait>>,
+    triggers: HashMap<String, Box<dyn TriggerSource>>,
+) -> Result<State, LoadError> {
     return Ok(State {
         sequences: vec![
-            Sequence::new(devices.clone()),
-            Sequence::new(devices.clone()),
+            Sequence::new(devices.clone(), triggers.clone()),
+            Sequence::new(devices.clone(), triggers.clone()),
         ],
+        scroll: scrollable::State::new(),
     });
 }
 
 impl iced::Application for Application {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = (HashMap<String, Box<dyn DeviceTrait>>,);
+    type Flags = (
+        HashMap<String, Box<dyn DeviceTrait>>,
+        HashMap<String, Box<dyn TriggerSource>>,
+    );
 
-    fn new(flags: (HashMap<String, Box<dyn DeviceTrait>>,)) -> (Application, Command<Message>) {
+    type Theme = iced::Theme;
+
+    fn theme(&self) -> Self::Theme {
+        iced::Theme::Dark
+    }
+
+    fn new(
+        flags: (
+            HashMap<String, Box<dyn DeviceTrait>>,
+            HashMap<String, Box<dyn TriggerSource>>,
+        ),
+    ) -> (Application, Command<Message>) {
         (
             Application::Loading,
-            Command::perform(dummy(flags.0), Message::Loaded),
+            Command::perform(dummy(flags.0, flags.1), Message::Loaded),
         )
     }
 
     fn title(&self) -> String {
-        return String::from("Twich Reaction Sequencer");
+        return String::from("Twitch Reaction Sequencer");
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -61,6 +84,7 @@ impl iced::Application for Application {
                 Message::Loaded(Ok(state)) => {
                     *self = Application::Ready(State {
                         sequences: state.sequences,
+                        scroll: state.scroll,
                     });
                 }
 
@@ -83,7 +107,7 @@ impl iced::Application for Application {
 
     fn view(&mut self) -> Element<Message> {
         match self {
-            Application::Loading => Text::new("title").into(),
+            Application::Loading => Text::new("Loading").into(),
             Application::Ready(state) => {
                 let c = Column::new().max_width(800).spacing(20);
 
@@ -94,11 +118,13 @@ impl iced::Application for Application {
                     .fold(
                         Column::new().spacing(20).padding(10),
                         |column: Column<_>, (i, sequence)| {
-                            column.push(
-                                sequence
-                                    .view()
-                                    .map(move |message| Message::SequenceMessage(i, message)),
-                            )
+                            column
+                                .push(
+                                    sequence
+                                        .view()
+                                        .map(move |message| Message::SequenceMessage(i, message)),
+                                )
+                                .push(Rule::horizontal(5))
                         },
                     )
                     .into();

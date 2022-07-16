@@ -1,4 +1,4 @@
-mod triggers;
+pub mod triggers;
 pub mod twitch_pub_sub;
 
 use crate::sequencer::QueueEvent;
