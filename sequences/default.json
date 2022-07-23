@@ -1,6 +1,10 @@
 {
     "id": "default",
     "name": "default",
+    "trigger": {
+        "triggerId": "twitch_pub_sub",
+        "triggerEventId": ""
+    },
     "sequence": [
         {
             "arguments": [],

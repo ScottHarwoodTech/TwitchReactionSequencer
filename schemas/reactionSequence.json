@@ -18,6 +18,22 @@
             "description": "Name of reaction sequence",
             "type": "string"
         },
+        "trigger": {
+            "description": "Trigger for the sequence",
+            "type": "object",
+            "required": [
+                "triggerId",
+                "triggerEventId"
+            ],
+            "properties": {
+                "triggerId": {
+                    "type": "string"
+                },
+                "triggerEventId": {
+                    "type": "string"
+                }
+            }
+        },
         "sequence": {
             "description": "List of actions to run when reacting",
             "type": "array",

@@ -1,8 +1,9 @@
-use iced;
+use iced::{self, button, Button, Text};
 use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
 
 use crate::sequencer::device::DeviceTrait;
+use crate::sequencer::reaction_sequence;
 
 // Drop down list of trigger sources,
 // Drop down list of actions on triggers
@@ -16,15 +17,31 @@ pub struct Action {
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     devices_pick_list: pick_list::State<String>,
     action_pick_list: pick_list::State<String>,
+    delete_button: button::State,
 }
 
 #[derive(Debug, Clone)]
 pub enum ActionMessage {
     DeviceSelected(String),
     DeviceActionSelected(String),
+    Delete,
 }
 
 impl Action {
+    pub fn from_existing(
+        devices: HashMap<String, Box<dyn DeviceTrait>>,
+        sequence_event: reaction_sequence::ReactionSequenceItemSequence,
+    ) -> Self {
+        Action {
+            selected_device: Some(sequence_event.device_id),
+            selected_action: Some(sequence_event.device_action_id),
+            devices: devices.clone(),
+            devices_pick_list: pick_list::State::new(),
+            action_pick_list: pick_list::State::new(),
+            delete_button: button::State::new(),
+        }
+    }
+
     pub fn new(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Self {
         Action {
             selected_device: Some(String::from("timer")),
@@ -32,6 +49,7 @@ impl Action {
             devices: devices.clone(),
             devices_pick_list: pick_list::State::new(),
             action_pick_list: pick_list::State::new(),
+            delete_button: button::State::new(),
         }
     }
 
@@ -48,6 +66,7 @@ impl Action {
             ActionMessage::DeviceActionSelected(selected_action) => {
                 self.selected_action = Some(selected_action)
             }
+            _ => {}
         }
     }
 
@@ -84,6 +103,10 @@ impl Action {
         );
 
         Column::new()
+            .push(
+                Button::new(&mut self.delete_button, Text::new("X"))
+                    .on_press(ActionMessage::Delete),
+            )
             .push(device_pick_list)
             .push(action_pick_list)
             .into()

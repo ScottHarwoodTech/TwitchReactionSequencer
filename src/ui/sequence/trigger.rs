@@ -1,7 +1,9 @@
 use iced;
 use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
+use std::hash::Hash;
 
+use crate::sequencer::reaction_sequence::{ReactionSequence, self};
 use crate::triggers::triggers::TriggerSource;
 
 // Drop down list of trigger sources,
@@ -25,6 +27,15 @@ pub enum TriggerMessage {
 }
 
 impl Trigger {
+    pub fn from_existing(triggers: HashMap<String, Box<dyn TriggerSource>>, trigger: reaction_sequence::) -> Self {
+        Trigger {
+            selected_trigger: (),
+            selected_event: (),
+            triggers: triggers.clone(),
+            triggers_pick_list: pick_list::State::new(),
+            action_pick_list: pick_list::State::new(),
+        }
+    }
     pub fn new(triggers: HashMap<String, Box<dyn TriggerSource>>) -> Self {
         Trigger {
             selected_trigger: Some(String::from("twitch_pub_sub")),
@@ -62,7 +73,7 @@ impl Trigger {
             &mut self.triggers_pick_list,
             keys,
             self.selected_trigger.clone(),
-            TriggerMessage::TriggerSelected,
+            |v| TriggerMessage::TriggerSelected(v),
         );
 
         let device = self

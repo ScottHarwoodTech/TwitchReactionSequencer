@@ -21,9 +21,11 @@ futures-util = { version = "0.3", default-features = false, features = ["sink", 
 native-tls="*"
 dotenv="*"
 textnonce="*"
-iced={version = "*", features=["tokio"], path="../iced" }
+iced={version = "*", features=["tokio", "debug"], path="../iced" }
 iced_native={version="*", path="../iced/native"}
 iced_style={version="*", path="../iced/style"}
 
 web-sys="0.3.58"
 dyn-clone="*"
+
+schemafy="*"

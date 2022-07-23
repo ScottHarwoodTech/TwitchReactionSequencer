@@ -5,7 +5,7 @@ use iced_native::mouse;
 use iced_native::overlay;
 use iced_native::renderer;
 use iced_native::touch;
-use iced_native::widget::{Column, Row};
+use iced_native::widget::Row;
 use iced_native::{
     Alignment, Background, Clipboard, Color, Element, Layout, Length, Padding, Point, Rectangle,
     Shell, Size, Vector, Widget,
@@ -33,7 +33,7 @@ where
     state: &'a mut State,
     height: Length,
     max_height: u32,
-    scrollbar_width: u16,
+    scrollbar_height: u16,
     scrollbar_margin: u16,
     scroller_width: u16,
     content: Row<'a, Message, Renderer>,
@@ -52,7 +52,7 @@ where
             state,
             height: Length::Shrink,
             max_height: u32::MAX,
-            scrollbar_width: 10,
+            scrollbar_height: 10,
             scrollbar_margin: 0,
             scroller_width: 10,
             content: Row::new(),
@@ -109,8 +109,8 @@ where
 
     /// Sets the scrollbar width of the [`HorizontalScrollable`] .
     /// Silently enforces a minimum value of 1.
-    pub fn scrollbar_width(mut self, scrollbar_width: u16) -> Self {
-        self.scrollbar_width = scrollbar_width.max(1);
+    pub fn scrollbar_height(mut self, scrollbar_height: u16) -> Self {
+        self.scrollbar_height = scrollbar_height.max(1);
         self
     }
 
@@ -183,7 +183,7 @@ pub fn update<Message>(
     cursor_position: Point,
     clipboard: &mut dyn Clipboard,
     shell: &mut Shell<'_, Message>,
-    scrollbar_width: u16,
+    scrollbar_height: u16,
     scrollbar_margin: u16,
     scroller_width: u16,
     on_scroll: &Option<Box<dyn Fn(f32) -> Message + '_>>,
@@ -203,7 +203,7 @@ pub fn update<Message>(
 
     let scrollbar = scrollbar(
         state,
-        scrollbar_width,
+        scrollbar_height,
         scrollbar_margin,
         scroller_width,
         bounds,
@@ -338,7 +338,7 @@ pub fn mouse_interaction(
     state: &State,
     layout: Layout<'_>,
     cursor_position: Point,
-    scrollbar_width: u16,
+    scrollbar_height: u16,
     scrollbar_margin: u16,
     scroller_width: u16,
     content_interaction: impl FnOnce(Layout<'_>, Point, &Rectangle) -> mouse::Interaction,
@@ -348,7 +348,7 @@ pub fn mouse_interaction(
     let content_bounds = content_layout.bounds();
     let scrollbar = scrollbar(
         state,
-        scrollbar_width,
+        scrollbar_height,
         scrollbar_margin,
         scroller_width,
         bounds,
@@ -390,7 +390,7 @@ pub fn draw<Renderer>(
     theme: &Renderer::Theme,
     layout: Layout<'_>,
     cursor_position: Point,
-    scrollbar_width: u16,
+    scrollbar_height: u16,
     scrollbar_margin: u16,
     scroller_width: u16,
     style: <Renderer::Theme as StyleSheet>::Style,
@@ -405,7 +405,7 @@ pub fn draw<Renderer>(
     let offset = state.offset(bounds, content_bounds);
     let scrollbar = scrollbar(
         state,
-        scrollbar_width,
+        scrollbar_height,
         scrollbar_margin,
         scroller_width,
         bounds,
@@ -419,20 +419,20 @@ pub fn draw<Renderer>(
         .unwrap_or(false);
 
     let cursor_position = if is_mouse_over && !is_mouse_over_scrollbar {
-        Point::new(cursor_position.x, cursor_position.y + offset as f32)
+        Point::new(cursor_position.x + offset as f32, cursor_position.y)
     } else {
         Point::new(cursor_position.x, -1.0)
     };
 
     if let Some(scrollbar) = scrollbar {
         renderer.with_layer(bounds, |renderer| {
-            renderer.with_translation(Vector::new(0.0, -(offset as f32)), |renderer| {
+            renderer.with_translation(Vector::new(-(offset as f32), 0.0), |renderer| {
                 draw_content(
                     renderer,
                     content_layout,
                     cursor_position,
                     &Rectangle {
-                        y: bounds.y + offset as f32,
+                        x: bounds.x + offset as f32,
                         ..bounds
                     },
                 );
@@ -489,7 +489,7 @@ pub fn draw<Renderer>(
             content_layout,
             cursor_position,
             &Rectangle {
-                y: bounds.y + offset as f32,
+                x: bounds.x + offset as f32,
                 ..bounds
             },
         );
@@ -498,7 +498,7 @@ pub fn draw<Renderer>(
 
 fn scrollbar(
     state: &State,
-    scrollbar_width: u16,
+    scrollbar_height: u16,
     scrollbar_margin: u16,
     scroller_width: u16,
     bounds: Rectangle,
@@ -507,7 +507,7 @@ fn scrollbar(
     let offset = state.offset(bounds, content_bounds);
 
     if content_bounds.height > bounds.height {
-        let outer_width = scrollbar_width.max(scroller_width) + 2 * scrollbar_margin;
+        let outer_width = scrollbar_height.max(scroller_width) + 2 * scrollbar_margin;
 
         let outer_bounds = Rectangle {
             x: bounds.x + bounds.width - outer_width as f32,
@@ -517,9 +517,9 @@ fn scrollbar(
         };
 
         let scrollbar_bounds = Rectangle {
-            x: bounds.x + bounds.width - f32::from(outer_width / 2 + scrollbar_width / 2),
+            x: bounds.x + bounds.width - f32::from(outer_width / 2 + scrollbar_height / 2),
             y: bounds.y,
-            width: scrollbar_width as f32,
+            width: scrollbar_height as f32,
             height: bounds.height,
         };
 
@@ -553,13 +553,13 @@ fn notify_on_scroll<Message>(
     content_bounds: Rectangle,
     shell: &mut Shell<'_, Message>,
 ) {
-    if content_bounds.height <= bounds.height {
+    if content_bounds.width <= bounds.width {
         return;
     }
 
     if let Some(on_scroll) = on_scroll {
         shell.publish(on_scroll(
-            state.offset.absolute(bounds, content_bounds) / (content_bounds.height - bounds.height),
+            state.offset.absolute(bounds, content_bounds) / (content_bounds.width - bounds.width),
         ));
     }
 }
@@ -604,7 +604,7 @@ where
             cursor_position,
             clipboard,
             shell,
-            self.scrollbar_width,
+            self.scrollbar_height,
             self.scrollbar_margin,
             self.scroller_width,
             &self.on_scroll,
@@ -626,7 +626,7 @@ where
             self.state,
             layout,
             cursor_position,
-            self.scrollbar_width,
+            self.scrollbar_height,
             self.scrollbar_margin,
             self.scroller_width,
             |layout, cursor_position, viewport| {
@@ -651,7 +651,7 @@ where
             theme,
             layout,
             cursor_position,
-            self.scrollbar_width,
+            self.scrollbar_height,
             self.scrollbar_margin,
             self.scroller_width,
             self.style,
@@ -676,7 +676,6 @@ where
                 let content_layout = layout.children().next().unwrap();
                 let content_bounds = content_layout.bounds();
                 let offset = state.offset(bounds, content_bounds);
-
                 overlay.translate(Vector::new(offset as f32, 0.0))
             })
     }
@@ -814,8 +813,8 @@ impl Scrollbar {
     }
 
     fn scroll_percentage(&self, grabbed_at: f32, cursor_position: Point) -> f32 {
-        (cursor_position.y - self.bounds.y - self.scroller.bounds.height * grabbed_at)
-            / (self.bounds.height - self.scroller.bounds.height)
+        (cursor_position.x - self.bounds.x - self.scroller.bounds.width * grabbed_at)
+            / (self.bounds.width - self.scroller.bounds.width)
     }
 }
 
