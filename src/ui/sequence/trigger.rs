@@ -3,7 +3,7 @@ use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::sequencer::reaction_sequence::{ReactionSequence, self};
+use crate::sequencer::reaction_sequence::{self, ReactionSequence};
 use crate::triggers::triggers::TriggerSource;
 
 // Drop down list of trigger sources,
@@ -27,10 +27,13 @@ pub enum TriggerMessage {
 }
 
 impl Trigger {
-    pub fn from_existing(triggers: HashMap<String, Box<dyn TriggerSource>>, trigger: reaction_sequence::) -> Self {
+    pub fn from_existing(
+        triggers: HashMap<String, Box<dyn TriggerSource>>,
+        trigger: reaction_sequence::ReactionSequenceTrigger,
+    ) -> Self {
         Trigger {
-            selected_trigger: (),
-            selected_event: (),
+            selected_trigger: Some(trigger.trigger_id),
+            selected_event: Some(trigger.trigger_event_id),
             triggers: triggers.clone(),
             triggers_pick_list: pick_list::State::new(),
             action_pick_list: pick_list::State::new(),

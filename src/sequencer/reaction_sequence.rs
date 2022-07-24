@@ -1,3 +1,2 @@
-extern crate schemafy_core;
-
-schemafy::schemafy!(root: ReactionSequence "./schemas/reactionSequence.json");
+use serde::{Deserialize, Serialize};
+schemafy::schemafy!("./schemas/reactionSequence.json");

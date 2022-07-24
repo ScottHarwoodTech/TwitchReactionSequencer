@@ -1,16 +1,18 @@
 pub mod action;
 pub mod trigger;
 
-use crate::custom_widgets::horizontal_scrollable::{self, HorizontalScrollable};
+use crate::custom_widgets::horizontal_scrollable::{self};
 use crate::sequencer::device::DeviceTrait;
-use crate::sequencer::reaction_sequence::{self, ReactionSequence};
+use crate::sequencer::reaction_sequence::{self};
 use crate::triggers::triggers::TriggerSource;
-use iced::{self, button, scrollable, Button, Text};
+use iced::{self, button, Button, Column, Text};
 use iced::{Element, Row};
 use std::collections::HashMap;
-use std::hash::Hash;
+use std::path::PathBuf;
+use tokio::fs;
 
 use self::action::ActionMessage;
+use uuid;
 
 // Drop down list of trigger sources,
 // Drop down list of actions on triggers
@@ -27,6 +29,8 @@ pub struct Sequence {
     add_action_button: button::State,
     delete_sequence_button: button::State,
     scroll: horizontal_scrollable::State,
+    filename: String,
+    name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -43,30 +47,43 @@ pub enum SequenceMessage {
 }
 
 impl Sequence {
+    pub fn get_filename(self) -> String {
+        return self.filename;
+    }
+
     pub fn from_existing(
         sequence: reaction_sequence::ReactionSequence,
+        filename: PathBuf,
         devices: HashMap<String, Box<dyn DeviceTrait>>,
         triggers: HashMap<String, Box<dyn TriggerSource>>,
     ) -> Self {
         return Sequence {
             devices: devices.clone(),
-            trigger: trigger::Trigger::from_existing(sequence.trigger),
+            trigger: trigger::Trigger::from_existing(triggers.clone(), sequence.trigger),
             actions: sequence
                 .sequence
                 .into_iter()
-                .map(|a| action::Action::from_existing(devices, a.clone()))
+                .map(|a| action::Action::from_existing(devices.clone(), a.clone()))
                 .collect(),
             state: SequenceState::Ready,
             add_action_button: button::State::new(),
             delete_sequence_button: button::State::new(),
             scroll: horizontal_scrollable::State::new(),
+            filename: String::from(filename.to_str().unwrap()),
+            name: sequence.name,
         };
     }
 
-    pub fn new(
+    pub async fn new(
         devices: HashMap<String, Box<dyn DeviceTrait>>,
         triggers: HashMap<String, Box<dyn TriggerSource>>,
     ) -> Self {
+        let filename = format!(
+            "./sequences/{}.json",
+            uuid::Uuid::new_v4().to_hyphenated().to_string()
+        ); //TODO: shouldnt be here
+        fs::write(&filename, "").await;
+
         Sequence {
             trigger: trigger::Trigger::new(triggers),
             devices: devices.clone(),
@@ -75,6 +92,8 @@ impl Sequence {
             add_action_button: button::State::new(),
             delete_sequence_button: button::State::new(),
             scroll: horizontal_scrollable::State::new(),
+            filename: filename.clone(),
+            name: String::from("Unnamed"),
         }
     }
 
@@ -103,15 +122,15 @@ impl Sequence {
     }
 
     pub fn view(&mut self) -> Element<SequenceMessage> {
+        let mut col = Column::new().spacing(20);
+
         let mut r = Row::new().spacing(20);
+
         let trigger: Element<_> = self
             .trigger
             .view()
             .map(move |message| SequenceMessage::TriggerMessage(message));
-        r = r.push(
-            Button::new(&mut self.delete_sequence_button, Text::new("X"))
-                .on_press(SequenceMessage::Delete),
-        );
+
         r = r.push(trigger);
 
         r = self
@@ -134,6 +153,17 @@ impl Sequence {
             .on_press(SequenceMessage::AddAction),
         );
 
-        return r.into();
+        let delete_button = Button::new(&mut self.delete_sequence_button, Text::new("X"))
+            .on_press(SequenceMessage::Delete);
+
+        col = col.push(
+            Row::new()
+                .spacing(20)
+                .push(delete_button)
+                .push(Text::new(self.name.clone())),
+        );
+
+        col = col.push(r);
+        return col.into();
     }
 }

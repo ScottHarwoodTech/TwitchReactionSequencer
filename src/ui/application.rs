@@ -1,21 +1,19 @@
 use std::collections::HashMap;
-use std::fs;
-use std::time::Duration;
+use tokio::{fs, io};
 
 use crate::sequencer::device::DeviceTrait;
-use crate::sequencer::reaction_sequence;
 use crate::triggers::triggers::TriggerSource;
 use crate::ui::sequence;
-use iced::{self, button, scrollable, Button, Column, Length, Row, Text};
+use iced::{self, button, scrollable, Button, Column, Length, Text};
 use iced::{Command, Element};
 use iced::{Rule, Scrollable};
-use tokio::time;
 
 use super::sequence::{Sequence, SequenceMessage};
 
 #[derive(Debug)]
 pub enum Application {
     Loading,
+    Error(String),
     Ready(State),
 }
 
@@ -33,32 +31,46 @@ pub enum Message {
     Loaded(Result<State, LoadError>),
     SequenceMessage(usize, SequenceMessage),
     AddSequence,
+    SequenceDeleted(Option<String>),
+    SequenceCreated(Sequence),
 }
 
 #[derive(Debug, Clone)]
 pub enum LoadError {
     FileError,
-    FormatError,
+    FormatError(String),
 }
 
 async fn load_sequences(
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     triggers: HashMap<String, Box<dyn TriggerSource>>,
 ) -> Result<State, LoadError> {
-    let paths = fs::read_dir("./");
+    let paths = fs::read_dir("./sequences").await; //TODO: this path should be relative to a userdata folder
     let mut sequences = Vec::<Sequence>::new();
     if paths.is_ok() {
-        for entry in paths.unwrap() {
-            let path = entry.unwrap().path();
-            if let Ok(file_content) = fs::read_to_string(path) {
-                let sequencer: reaction_sequence::ReactionSequence =
-                    serde_json::from_str(&file_content.as_str()).unwrap();
+        let mut paths = paths.unwrap();
 
-                sequences.push(Sequence::from_existing(
-                    sequencer,
-                    devices.clone(),
-                    triggers.clone(),
-                ))
+        while let Ok(Some(entry)) = paths.next_entry().await {
+            if (entry.metadata().await.unwrap().is_dir()) {
+                continue;
+            }
+
+            let path = entry.path();
+            if let Ok(file_content) = fs::read(&path).await {
+                let get_sequencer = serde_json::from_slice(&file_content);
+                if get_sequencer.is_ok() {
+                    let sequencer = get_sequencer.unwrap();
+                    sequences.push(Sequence::from_existing(
+                        sequencer,
+                        path.clone(),
+                        devices.clone(),
+                        triggers.clone(),
+                    ));
+                } else {
+                    return Err(LoadError::FormatError(
+                        get_sequencer.err().unwrap().to_string(),
+                    ));
+                }
             } else {
                 return Err(LoadError::FileError);
             }
@@ -68,12 +80,20 @@ async fn load_sequences(
     };
 
     return Ok(State {
-        sequences: vec![],
+        sequences: sequences,
         scroll: scrollable::State::new(),
         add_sequence_button: button::State::new(),
         devices: devices.clone(),
         triggers: triggers.clone(),
     });
+}
+
+async fn delete_file(filename: String) -> Option<String> {
+    if let Err(v) = fs::remove_file(filename).await {
+        return Some(v.to_string());
+    };
+
+    return None;
 }
 
 impl iced::Application for Application {
@@ -113,14 +133,21 @@ impl iced::Application for Application {
                     *self = Application::Ready(state);
                 }
 
-                Message::Loaded(Err(_)) => {}
+                Message::Loaded(Err(load_error)) => match load_error {
+                    LoadError::FormatError(msg) => *self = Application::Error(msg),
+                    _ => {}
+                },
                 _ => {}
             },
 
             Application::Ready(state) => match message {
                 Message::SequenceMessage(i, sequence_message) => match sequence_message {
                     SequenceMessage::Delete => {
-                        state.sequences.remove(i);
+                        let removed_item = state.sequences.remove(i);
+                        return Command::perform(
+                            delete_file(removed_item.get_filename()),
+                            Message::SequenceDeleted,
+                        );
                     }
                     _ => {
                         if let Some(sequence) = state.sequences.get_mut(i) {
@@ -128,11 +155,23 @@ impl iced::Application for Application {
                         }
                     }
                 },
-                Message::AddSequence => state
-                    .sequences
-                    .push(Sequence::new(state.devices.clone(), state.triggers.clone())),
+                Message::AddSequence => {
+                    return Command::perform(
+                        Sequence::new(state.devices.clone(), state.triggers.clone()),
+                        Message::SequenceCreated,
+                    );
+                }
+                Message::SequenceCreated(sequence) => state.sequences.push(sequence),
+
+                Message::SequenceDeleted(msg) => {
+                    if msg.is_some() {
+                        *self = Application::Error(msg.unwrap())
+                    }
+                }
                 _ => {}
             },
+
+            _ => {}
         }
 
         Command::none()
@@ -141,6 +180,7 @@ impl iced::Application for Application {
     fn view(&mut self) -> Element<Message> {
         match self {
             Application::Loading => Text::new("Loading").into(),
+            Application::Error(msg) => Text::new(msg.clone()).into(),
             Application::Ready(state) => {
                 let mut c = Column::new().width(Length::Fill).spacing(1);
 
