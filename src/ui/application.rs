@@ -1,20 +1,21 @@
 use std::collections::HashMap;
-use tokio::{fs, io};
+use tokio::fs;
 
+use super::sequence::{Sequence, SequenceMessage};
 use crate::sequencer::device::DeviceTrait;
 use crate::triggers::triggers::TriggerSource;
 use crate::ui::sequence;
 use iced::{self, button, scrollable, Button, Column, Length, Text};
 use iced::{Command, Element};
 use iced::{Rule, Scrollable};
-
-use super::sequence::{Sequence, SequenceMessage};
+use iced_native::{window, Event};
 
 #[derive(Debug)]
 pub enum Application {
     Loading,
     Error(String),
     Ready(State),
+    UnsavedCloseRequested(State),
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +34,7 @@ pub enum Message {
     AddSequence,
     SequenceDeleted(Option<String>),
     SequenceCreated(Sequence),
+    EventOccurred(iced_native::Event),
 }
 
 #[derive(Debug, Clone)]
@@ -51,7 +53,7 @@ async fn load_sequences(
         let mut paths = paths.unwrap();
 
         while let Ok(Some(entry)) = paths.next_entry().await {
-            if (entry.metadata().await.unwrap().is_dir()) {
+            if entry.metadata().await.unwrap().is_dir() {
                 continue;
             }
 
@@ -126,6 +128,10 @@ impl iced::Application for Application {
         return String::from("Twitch Reaction Sequencer");
     }
 
+    fn subscription(&self) -> iced::Subscription<Self::Message> {
+        iced_native::subscription::events().map(Message::EventOccurred)
+    }
+
     fn update(&mut self, message: Message) -> Command<Message> {
         match self {
             Application::Loading => match message {
@@ -168,6 +174,13 @@ impl iced::Application for Application {
                         *self = Application::Error(msg.unwrap())
                     }
                 }
+
+                Message::EventOccurred(event) => {
+                    if let Event::Window(window::Event::CloseRequested) = event {
+                        *self = Application::UnsavedCloseRequested(state.clone());
+                    }
+                }
+
                 _ => {}
             },
 
@@ -213,6 +226,9 @@ impl iced::Application for Application {
                 ); // Add Sequence Button
 
                 return Scrollable::new(&mut state.scroll).push(c).into();
+            }
+            Application::UnsavedCloseRequested(_state) => {
+                Text::new("You just tried to exit when unsaved").into()
             }
         }
     }

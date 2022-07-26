@@ -82,7 +82,7 @@ impl Sequence {
             "./sequences/{}.json",
             uuid::Uuid::new_v4().to_hyphenated().to_string()
         ); //TODO: shouldnt be here
-        fs::write(&filename, "").await;
+        fs::write(&filename, "").await.unwrap();
 
         Sequence {
             trigger: trigger::Trigger::new(triggers),

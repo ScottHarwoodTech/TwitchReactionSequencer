@@ -13,5 +13,9 @@ pub fn ui(
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     triggers: HashMap<String, Box<dyn TriggerSource>>,
 ) {
-    application::Application::run(Settings::with_flags((devices, triggers))).unwrap();
+    application::Application::run(Settings {
+        exit_on_close_request: false,
+        ..Settings::with_flags((devices, triggers))
+    })
+    .unwrap();
 }
