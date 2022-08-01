@@ -3,7 +3,7 @@ use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::sequencer::reaction_sequence::{self, ReactionSequence};
+use crate::sequencer::reaction_sequence::{self, ReactionSequence, ReactionSequenceTrigger};
 use crate::triggers::triggers::TriggerSource;
 
 // Drop down list of trigger sources,
@@ -39,6 +39,13 @@ impl Trigger {
             action_pick_list: pick_list::State::new(),
         }
     }
+
+    pub fn to_reaction_sequence_trigger(&self) -> reaction_sequence::ReactionSequenceTrigger {
+        ReactionSequenceTrigger {
+            trigger_event_id: self.selected_event.clone().unwrap_or_default(),
+            trigger_id: self.selected_trigger.clone().unwrap_or_default(),
+        }
+    }
     pub fn new(triggers: HashMap<String, Box<dyn TriggerSource>>) -> Self {
         Trigger {
             selected_trigger: Some(String::from("twitch_pub_sub")),
@@ -56,7 +63,14 @@ impl Trigger {
 
                 if let Some(device) = self.triggers.get(&selected_device) {
                     let mut device_action_keys = device.get_events().keys().into_iter();
-                    self.selected_event = Some(device_action_keys.next().unwrap().to_string());
+
+                    let device_action = device_action_keys.next();
+
+                    if device_action.is_some() {
+                        self.selected_event = Some(device_action.unwrap().to_string());
+                    } else {
+                        self.selected_event = None;
+                    }
                 }
             }
             TriggerMessage::TriggerEventSelected(selected_event) => {

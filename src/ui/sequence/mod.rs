@@ -3,7 +3,7 @@ pub mod trigger;
 
 use crate::custom_widgets::horizontal_scrollable::{self};
 use crate::sequencer::device::DeviceTrait;
-use crate::sequencer::reaction_sequence::{self};
+use crate::sequencer::reaction_sequence::{self, ReactionSequence};
 use crate::triggers::triggers::TriggerSource;
 use iced::{self, button, Button, Column, Text};
 use iced::{Element, Row};
@@ -31,6 +31,7 @@ pub struct Sequence {
     scroll: horizontal_scrollable::State,
     filename: String,
     name: String,
+    id: String,
 }
 
 #[derive(Debug, Clone)]
@@ -71,6 +72,20 @@ impl Sequence {
             scroll: horizontal_scrollable::State::new(),
             filename: String::from(filename.to_str().unwrap()),
             name: sequence.name,
+            id: sequence.id,
+        };
+    }
+    pub fn to_reaction_seqeunce(&self) -> reaction_sequence::ReactionSequence {
+        return ReactionSequence {
+            name: self.name.clone(),
+            trigger: self.trigger.to_reaction_sequence_trigger(),
+            sequence: self
+                .actions
+                .clone()
+                .into_iter()
+                .map(|a| a.to_reaction_sequence_item())
+                .collect(),
+            id: self.id.clone(),
         };
     }
 
@@ -78,11 +93,8 @@ impl Sequence {
         devices: HashMap<String, Box<dyn DeviceTrait>>,
         triggers: HashMap<String, Box<dyn TriggerSource>>,
     ) -> Self {
-        let filename = format!(
-            "./sequences/{}.json",
-            uuid::Uuid::new_v4().to_hyphenated().to_string()
-        ); //TODO: shouldnt be here
-        fs::write(&filename, "").await.unwrap();
+        let id = uuid::Uuid::new_v4().to_hyphenated().to_string();
+        let filename = format!("./sequences/{}.json", &id); //TODO: shouldnt be here
 
         Sequence {
             trigger: trigger::Trigger::new(triggers),
@@ -94,6 +106,7 @@ impl Sequence {
             scroll: horizontal_scrollable::State::new(),
             filename: filename.clone(),
             name: String::from("Unnamed"),
+            id: id,
         }
     }
 

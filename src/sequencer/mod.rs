@@ -47,10 +47,10 @@ pub async fn watch_queue(
     print!("Started queue reciever");
     while queue_reciever.changed().await.is_ok() {
         println!("recieved = {:?}", *queue_reciever.borrow());
-        let data = include_str!("../../sequences/default.json");
-        let sequencer: reaction_sequence::ReactionSequence = serde_json::from_str(data)?;
+        // let data = include_str!("../../sequences/default.json");
+        //let sequencer: reaction_sequence::ReactionSequence = serde_json::from_str(data)?;
 
-        sequencer.play(&device_set).await;
+        // sequencer.play(&device_set).await;
     }
 
     return Ok(());

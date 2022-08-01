@@ -3,7 +3,7 @@ use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
 
 use crate::sequencer::device::DeviceTrait;
-use crate::sequencer::reaction_sequence;
+use crate::sequencer::reaction_sequence::{self, ReactionSequenceItemSequence};
 
 // Drop down list of trigger sources,
 // Drop down list of actions on triggers
@@ -18,6 +18,8 @@ pub struct Action {
     devices_pick_list: pick_list::State<String>,
     action_pick_list: pick_list::State<String>,
     delete_button: button::State,
+    id: String,
+    arguments: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -39,6 +41,16 @@ impl Action {
             devices_pick_list: pick_list::State::new(),
             action_pick_list: pick_list::State::new(),
             delete_button: button::State::new(),
+            id: sequence_event.id,
+            arguments: sequence_event.arguments,
+        }
+    }
+    pub fn to_reaction_sequence_item(&self) -> reaction_sequence::ReactionSequenceItemSequence {
+        ReactionSequenceItemSequence {
+            device_action_id: self.selected_action.clone().unwrap_or_default(),
+            device_id: self.selected_device.clone().unwrap_or_default(),
+            id: self.id.clone(),
+            arguments: self.arguments.clone(),
         }
     }
 
@@ -50,6 +62,8 @@ impl Action {
             devices_pick_list: pick_list::State::new(),
             action_pick_list: pick_list::State::new(),
             delete_button: button::State::new(),
+            id: uuid::Uuid::new_v4().to_hyphenated().to_string(),
+            arguments: vec![],
         }
     }
 

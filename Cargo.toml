@@ -24,7 +24,7 @@ textnonce="*"
 iced={version = "*", features=["tokio", "debug"], path="../iced" }
 iced_native={version="*", path="../iced/native"}
 iced_style={version="*", path="../iced/style"}
-
+iced_aw={version="*", git="https://github.com/iced-rs/iced_aw"}
 web-sys="0.3.58"
 dyn-clone="*"
 

@@ -5,7 +5,7 @@ use super::sequence::{Sequence, SequenceMessage};
 use crate::sequencer::device::DeviceTrait;
 use crate::triggers::triggers::TriggerSource;
 use crate::ui::sequence;
-use iced::{self, button, scrollable, Button, Column, Length, Text};
+use iced::{self, button, keyboard, scrollable, Button, Column, Length, Row, Text};
 use iced::{Command, Element};
 use iced::{Rule, Scrollable};
 use iced_native::{window, Event};
@@ -16,6 +16,7 @@ pub enum Application {
     Error(String),
     Ready(State),
     UnsavedCloseRequested(State),
+    ShouldExit,
 }
 
 #[derive(Debug, Clone)]
@@ -23,8 +24,10 @@ pub struct State {
     sequences: Vec<sequence::Sequence>,
     scroll: scrollable::State,
     add_sequence_button: button::State,
+    save_button: button::State,
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     triggers: HashMap<String, Box<dyn TriggerSource>>,
+    tainted: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -35,11 +38,18 @@ pub enum Message {
     SequenceDeleted(Option<String>),
     SequenceCreated(Sequence),
     EventOccurred(iced_native::Event),
+    Saved(Option<SaveError>),
+    Save,
 }
 
 #[derive(Debug, Clone)]
 pub enum LoadError {
     FileError,
+    FormatError(String),
+}
+
+#[derive(Debug, Clone)]
+pub enum SaveError {
     FormatError(String),
 }
 
@@ -85,9 +95,27 @@ async fn load_sequences(
         sequences: sequences,
         scroll: scrollable::State::new(),
         add_sequence_button: button::State::new(),
+        save_button: button::State::new(),
         devices: devices.clone(),
         triggers: triggers.clone(),
+        tainted: false,
     });
+}
+
+async fn save_sequences(sequences: Vec<Sequence>) -> Option<SaveError> {
+    for sequence in sequences {
+        let json = serde_json::to_string_pretty(&sequence.to_reaction_seqeunce());
+
+        if json.is_err() {
+            return Some(SaveError::FormatError(json.unwrap_err().to_string()));
+        }
+
+        fs::write(&sequence.get_filename(), &json.unwrap())
+            .await
+            .unwrap();
+    }
+
+    return None;
 }
 
 async fn delete_file(filename: String) -> Option<String> {
@@ -124,8 +152,24 @@ impl iced::Application for Application {
         )
     }
 
+    fn should_exit(&self) -> bool {
+        match self {
+            Application::ShouldExit => true,
+            _ => false,
+        }
+    }
+
     fn title(&self) -> String {
-        return String::from("Twitch Reaction Sequencer");
+        let tainted = match self {
+            Application::Loading => false,
+            Application::Ready(state) | Application::UnsavedCloseRequested(state) => state.tainted,
+            _ => false,
+        };
+
+        format!(
+            "Twitch Reaction Sequencer{}",
+            if tainted { "*" } else { "" }
+        )
     }
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
@@ -146,43 +190,76 @@ impl iced::Application for Application {
                 _ => {}
             },
 
-            Application::Ready(state) => match message {
-                Message::SequenceMessage(i, sequence_message) => match sequence_message {
-                    SequenceMessage::Delete => {
-                        let removed_item = state.sequences.remove(i);
+            Application::UnsavedCloseRequested(state) | Application::Ready(state) => {
+                match message {
+                    Message::SequenceMessage(i, sequence_message) => match sequence_message {
+                        SequenceMessage::Delete => {
+                            let removed_item = state.sequences.remove(i);
+                            return Command::perform(
+                                delete_file(removed_item.get_filename()),
+                                Message::SequenceDeleted,
+                            );
+                        }
+                        _ => {
+                            if let Some(sequence) = state.sequences.get_mut(i) {
+                                sequence.update(sequence_message);
+                            }
+                        }
+                    },
+
+                    Message::AddSequence => {
                         return Command::perform(
-                            delete_file(removed_item.get_filename()),
-                            Message::SequenceDeleted,
+                            Sequence::new(state.devices.clone(), state.triggers.clone()),
+                            Message::SequenceCreated,
                         );
                     }
-                    _ => {
-                        if let Some(sequence) = state.sequences.get_mut(i) {
-                            sequence.update(sequence_message);
+
+                    Message::SequenceCreated(sequence) => {
+                        state.sequences.push(sequence);
+                        *self = Application::Ready(State {
+                            tainted: true,
+                            ..state.clone()
+                        })
+                    }
+
+                    Message::SequenceDeleted(msg) => {
+                        if msg.is_some() {
+                            *self = Application::Error(msg.unwrap())
+                        } else {
+                            *self = Application::Ready(State {
+                                tainted: true,
+                                ..state.clone()
+                            });
                         }
                     }
-                },
-                Message::AddSequence => {
-                    return Command::perform(
-                        Sequence::new(state.devices.clone(), state.triggers.clone()),
-                        Message::SequenceCreated,
-                    );
-                }
-                Message::SequenceCreated(sequence) => state.sequences.push(sequence),
 
-                Message::SequenceDeleted(msg) => {
-                    if msg.is_some() {
-                        *self = Application::Error(msg.unwrap())
+                    Message::EventOccurred(event) => {
+                        if let Event::Window(window::Event::CloseRequested) = event {
+                            if state.tainted {
+                                *self = Application::UnsavedCloseRequested(state.clone());
+                            } else {
+                                *self = Application::ShouldExit
+                            }
+                        } else if let Event::Keyboard(keyboard::Event::KeyPressed {
+                            key_code: keyboard::KeyCode::S,
+                            modifiers: keyboard::Modifiers::CTRL,
+                        }) = event
+                        {
+                            return try_save(state);
+                        }
                     }
-                }
+                    Message::Save => return try_save(state),
 
-                Message::EventOccurred(event) => {
-                    if let Event::Window(window::Event::CloseRequested) = event {
-                        *self = Application::UnsavedCloseRequested(state.clone());
+                    Message::Saved(_) => {
+                        *self = Application::Ready(State {
+                            tainted: false,
+                            ..state.clone()
+                        })
                     }
-                }
 
-                _ => {}
-            },
+                    _ => {}
+                }
+            }
 
             _ => {}
         }
@@ -194,7 +271,9 @@ impl iced::Application for Application {
         match self {
             Application::Loading => Text::new("Loading").into(),
             Application::Error(msg) => Text::new(msg.clone()).into(),
-            Application::Ready(state) => {
+            Application::Ready(state) => render_when_ready(state).into(),
+            Application::ShouldExit => Text::new("exiting").into(),
+            Application::UnsavedCloseRequested(state) => {
                 let mut c = Column::new().width(Length::Fill).spacing(1);
 
                 let seqs: Element<_> = state
@@ -225,11 +304,62 @@ impl iced::Application for Application {
                     .on_press(Message::AddSequence),
                 ); // Add Sequence Button
 
-                return Scrollable::new(&mut state.scroll).push(c).into();
-            }
-            Application::UnsavedCloseRequested(_state) => {
-                Text::new("You just tried to exit when unsaved").into()
+                let contents = Scrollable::new(&mut state.scroll).push(c);
+                return Column::new()
+                    .push(
+                        Button::new(
+                            &mut state.save_button,
+                            Row::new()
+                                .push(Text::new("You just tried to exit when unsaved"))
+                                .push(Text::new("+")),
+                        )
+                        .on_press(Message::Save),
+                    )
+                    .push(contents)
+                    .into(); //TODO change this to a modal
             }
         }
     }
+}
+
+fn render_when_ready(state: &mut State) -> Scrollable<Message> {
+    let mut c = Column::new().width(Length::Fill).spacing(1);
+
+    let seqs: Element<_> = state
+        .sequences
+        .iter_mut()
+        .enumerate()
+        .fold(
+            Column::new().spacing(20).padding(10),
+            |column: Column<_>, (i, sequence)| {
+                column
+                    .push(
+                        sequence
+                            .view()
+                            .map(move |message| Message::SequenceMessage(i, message)),
+                    )
+                    .push(Rule::horizontal(5))
+            },
+        )
+        .into();
+
+    c = c.push(seqs);
+
+    c = c.push(
+        Button::new(
+            &mut state.add_sequence_button,
+            Text::new("Add Sequence +").size(20),
+        )
+        .on_press(Message::AddSequence),
+    ); // Add Sequence Button
+
+    return Scrollable::new(&mut state.scroll).push(c);
+}
+
+fn try_save(state: &mut State) -> Command<Message> {
+    if state.tainted {
+        return Command::perform(save_sequences(state.sequences.clone()), Message::Saved);
+    }
+
+    return Command::none();
 }
