@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::ErrorKind;
 use tokio::fs;
 
 use super::sequence::{Sequence, SequenceMessage};
@@ -120,7 +121,9 @@ async fn save_sequences(sequences: Vec<Sequence>) -> Option<SaveError> {
 
 async fn delete_file(filename: String) -> Option<String> {
     if let Err(v) = fs::remove_file(filename).await {
-        return Some(v.to_string());
+        if v.kind() != ErrorKind::NotFound {
+            return Some(v.to_string());
+        }
     };
 
     return None;
