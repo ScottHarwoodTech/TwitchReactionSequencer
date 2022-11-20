@@ -1,5 +1,5 @@
 mod application;
-pub mod fsUtils;
+pub mod fs_utils;
 mod panes;
 mod sequence;
 pub mod util;

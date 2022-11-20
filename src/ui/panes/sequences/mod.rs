@@ -1,7 +1,7 @@
 pub mod sequence;
 use crate::triggers::triggers::TriggerSource;
-use crate::ui::fsUtils::LoadError;
-use crate::{sequencer::device::DeviceTrait, ui::fsUtils::SaveError};
+use crate::ui::fs_utils::LoadError;
+use crate::{sequencer::device::DeviceTrait, ui::fs_utils::SaveError};
 use iced::{
     self, button, keyboard, scrollable, Button, Column, Length, Row, Rule, Scrollable, Text,
 };
@@ -285,6 +285,9 @@ async fn save_sequences(sequences: Vec<Sequence>) -> Option<SaveError> {
 }
 
 async fn delete_file(filename: String) -> Option<String> {
+    if !fs::metadata(filename.clone()).await.is_ok() {
+        return None;
+    }
     if let Err(v) = fs::remove_file(filename).await {
         return Some(v.to_string());
     };
