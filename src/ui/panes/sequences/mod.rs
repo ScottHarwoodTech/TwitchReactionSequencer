@@ -1,5 +1,4 @@
 pub mod sequence;
-
 use crate::triggers::triggers::TriggerSource;
 use crate::ui::fsUtils::LoadError;
 use crate::{sequencer::device::DeviceTrait, ui::fsUtils::SaveError};
@@ -10,7 +9,6 @@ use iced::{Command, Element};
 use iced_native::{window, Event};
 use sequence::{Sequence, SequenceMessage};
 
-use crate::ui::panes::PaneMessage;
 use std::collections::HashMap;
 use tokio::fs;
 
@@ -37,9 +35,7 @@ pub enum SequencesMessage {
     Save,
 }
 
-impl PaneMessage for SequenceMessage {}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Sequences {
     Loading,
     Error(String),
@@ -49,7 +45,7 @@ pub enum Sequences {
 }
 
 impl Sequences {
-    fn new(
+    pub fn new(
         flags: (
             HashMap<String, Box<dyn DeviceTrait>>,
             HashMap<String, Box<dyn TriggerSource>>,
@@ -63,15 +59,15 @@ impl Sequences {
 
     pub fn should_exit(&self) -> bool {
         match self {
-            Application::ShouldExit => true,
+            Sequences::ShouldExit => true,
             _ => false,
         }
     }
 
     pub fn title(&self) -> String {
         let tainted = match self {
-            Application::Loading => false,
-            Application::Ready(state) | Application::UnsavedCloseRequested(state) => state.tainted,
+            Sequences::Loading => false,
+            Sequences::Ready(state) | Sequences::UnsavedCloseRequested(state) => state.tainted,
             _ => false,
         };
 
