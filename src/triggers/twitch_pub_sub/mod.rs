@@ -1,13 +1,15 @@
 use crate::sequencer::QueueEvent;
 use crate::triggers::triggers::TriggerSource;
 use async_trait::async_trait;
-use futures_util::{future, SinkExt, StreamExt};
+use futures_util::FutureExt;
+use futures_util::{future, select, SinkExt, StreamExt};
 use native_tls::TlsConnector;
 use pubsub::Topic;
 use std::collections::HashMap;
 use std::error::Error;
 use textnonce::TextNonce;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::watch;
 use tokio_tungstenite::tungstenite::protocol::{Message, WebSocketConfig};
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 use twitch_api2::twitch_oauth2::{
@@ -155,7 +157,11 @@ impl TwitchPubSub {
 
 #[async_trait]
 impl TriggerSource for TwitchPubSub {
-    async fn watch(&self, _send_trigger: Sender<QueueEvent>) -> Result<(), Box<dyn Error>> {
+    async fn watch(
+        &self,
+        _send_trigger: Sender<QueueEvent>,
+        mut watcher: watch::Receiver<()>,
+    ) -> Result<(), Box<dyn Error>> {
         let channel_points_actions = pubsub::channel_points::ChannelPointsChannelV1 {
             channel_id: 216053282,
         }
@@ -186,7 +192,12 @@ impl TriggerSource for TwitchPubSub {
             future::ready(())
         });
 
-        fut.await;
+        select!(
+            _x = fut.fuse() => println!("ws_stream stopped"),
+            _y = watcher.changed().fuse() => {
+                println!("ws_stream_killed by watcher");
+            }
+        );
 
         return Ok(());
     }

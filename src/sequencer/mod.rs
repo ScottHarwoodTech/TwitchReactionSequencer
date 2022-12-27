@@ -43,9 +43,11 @@ use std::error::Error;
 pub async fn watch_queue(
     device_set: HashMap<String, Box<dyn DeviceTrait>>,
     mut queue_reciever: watch::Receiver<QueueEvent>,
+    task_handler_reciever: watch::Receiver<()>,
 ) -> Result<(), Box<dyn Error>> {
-    print!("Started queue reciever");
-    while queue_reciever.changed().await.is_ok() {
+    println!("Started queue reciever");
+
+    while queue_reciever.changed().await.is_ok() && !task_handler_reciever.has_changed().unwrap() {
         println!("recieved = {:?}", *queue_reciever.borrow());
         // let data = include_str!("../../sequences/default.json");
         //let sequencer: reaction_sequence::ReactionSequence = serde_json::from_str(data)?;

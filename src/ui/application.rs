@@ -1,29 +1,48 @@
-use std::collections::HashMap;
-
-use iced::{Command, Text};
-use iced_native::command;
-
+use super::panes::{
+    sequences::{Sequences, SequencesMessage},
+    settings::{Component, Settings, SettingsMessage},
+};
 use crate::{sequencer::device::DeviceTrait, triggers::triggers::TriggerSource};
-
-use super::panes::sequences::{sequence, Sequences, SequencesMessage};
-use super::sequence::{Sequence, SequenceMessage};
+use iced::{button, Button, Column, Command, Row, Text};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum Application {
     Loading,
     Sequences(State),
+    Settings(State),
+}
+
+#[derive(Debug, Clone)]
+pub struct Buttons {
+    sequences: button::State,
+    settings: button::State,
 }
 
 #[derive(Debug, Clone)]
 pub struct State {
     sequences: Sequences,
+    settings: Settings,
+    buttons: Buttons,
+}
+
+#[derive(Debug, Clone)]
+pub enum Pane {
+    Sequences,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ChangePane {
+    MoveToSequences,
+    MoveToSettings,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     SequencesMessage(SequencesMessage),
-    Loaded(State),
+    SettingsMessage(SettingsMessage),
     EventOccurred(iced_native::Event),
+    ChangePane(ChangePane),
 }
 
 fn init(
@@ -60,11 +79,21 @@ impl iced::Application for Application {
             HashMap<String, Box<dyn TriggerSource>>,
         ),
     ) -> (Application, Command<Message>) {
-        let i = init(flags.0, flags.1);
-
+        let sequences = init(flags.0, flags.1);
+        let settings = Settings::new();
         return (
-            Application::Sequences(State { sequences: i.0 }),
-            i.1.map(Message::SequencesMessage),
+            Application::Sequences(State {
+                sequences: sequences.0,
+                settings: settings.0,
+                buttons: Buttons {
+                    sequences: button::State::new(),
+                    settings: button::State::new(),
+                },
+            }),
+            Command::batch(vec![
+                sequences.1.map(Message::SequencesMessage),
+                settings.1.map(Message::SettingsMessage),
+            ]),
         );
     }
 
@@ -80,14 +109,27 @@ impl iced::Application for Application {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
+        match message {
+            Message::ChangePane(change_pane) => match self {
+                Application::Sequences(state) | Application::Settings(state) => match change_pane {
+                    ChangePane::MoveToSettings => {
+                        *self = Application::Settings(state.clone());
+                        return Command::none();
+                    }
+                    ChangePane::MoveToSequences => {
+                        *self = Application::Sequences(state.clone());
+                        return Command::none();
+                    }
+                },
+                _ => {}
+            },
+            _ => {}
+        }
         match self {
             Application::Loading => match message {
-                Message::Loaded(state) => {
-                    *self = Application::Sequences(state);
-                    return Command::none();
-                }
                 _ => Command::none(),
             },
+
             Application::Sequences(state) => match message {
                 Message::EventOccurred(e) => {
                     state.sequences.update(SequencesMessage::EventOccurred(e))
@@ -103,9 +145,32 @@ impl iced::Application for Application {
     }
 
     fn view(&mut self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
-        return match self {
-            Application::Sequences(state) => state.sequences.view().map(Message::SequencesMessage),
-            _ => Text::new("label").into(),
-        };
+        let mut page: Column<_> = Column::new();
+
+        match self {
+            Application::Loading => {}
+            Application::Sequences(state) => {
+                page = page.push(header(&mut state.buttons));
+                page = page.push(state.sequences.view().map(Message::SequencesMessage))
+            }
+            Application::Settings(state) => {
+                page = page.push(header(&mut state.buttons));
+                page = page.push(state.settings.view().map(Message::SettingsMessage));
+            }
+        }
+
+        return page.into();
     }
+}
+
+fn header(buttons: &mut Buttons) -> Row<Message> {
+    return Row::new()
+        .push(
+            Button::new(&mut buttons.sequences, Text::new("Sequences"))
+                .on_press(Message::ChangePane(ChangePane::MoveToSequences)),
+        )
+        .push(
+            Button::new(&mut buttons.settings, Text::new("Settings"))
+                .on_press(Message::ChangePane(ChangePane::MoveToSettings)),
+        );
 }

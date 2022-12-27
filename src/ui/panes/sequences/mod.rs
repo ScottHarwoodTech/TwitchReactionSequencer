@@ -1,13 +1,18 @@
 pub mod sequence;
 use crate::triggers::triggers::TriggerSource;
 use crate::ui::fs_utils::LoadError;
+use crate::{sequencer, triggers, ThreadActions};
 use crate::{sequencer::device::DeviceTrait, ui::fs_utils::SaveError};
+use futures_util::select;
+use futures_util::{future, FutureExt};
+use iced::futures::channel::oneshot;
 use iced::{
     self, button, keyboard, scrollable, Button, Column, Length, Row, Rule, Scrollable, Text,
 };
 use iced::{Command, Element};
 use iced_native::{window, Event};
 use sequence::{Sequence, SequenceMessage};
+use tokio::sync::watch;
 
 use std::collections::HashMap;
 use tokio::fs;
@@ -21,6 +26,9 @@ pub struct SequencesState {
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     triggers: HashMap<String, Box<dyn TriggerSource>>,
     tainted: bool,
+    start_button: button::State,
+    stop_button: button::State,
+    listener_sender: Option<tokio::sync::mpsc::Sender<ThreadActions>>,
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +41,10 @@ pub enum SequencesMessage {
     EventOccurred(iced_native::Event),
     Saved(Option<SaveError>),
     Save,
+    StartListeners,
+    StopListeners,
+    StoppedListeners(()),
+    TriggerComplete,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +54,12 @@ pub enum Sequences {
     Ready(SequencesState),
     UnsavedCloseRequested(SequencesState),
     ShouldExit,
+    Running(SequencesState),
+}
+
+pub async fn bury(v: tokio::sync::mpsc::Sender<ThreadActions>) -> () {
+    v.send(ThreadActions::Stop).await.unwrap();
+    return ();
 }
 
 impl Sequences {
@@ -88,6 +106,25 @@ impl Sequences {
                     LoadError::FormatError(msg) => *self = Sequences::Error(msg),
                     _ => {}
                 },
+                _ => {}
+            },
+
+            Sequences::Running(state) => match message {
+                SequencesMessage::StopListeners => {
+                    if state.listener_sender.is_some() {
+                        let listender_sender = state.clone().listener_sender.unwrap().clone();
+                        return Command::perform(
+                            bury(listender_sender.clone()),
+                            SequencesMessage::StoppedListeners,
+                        );
+                    }
+                }
+
+                SequencesMessage::StoppedListeners(()) => {
+                    *self = Sequences::Ready(SequencesState { ..state.clone() });
+
+                    return Command::none();
+                }
                 _ => {}
             },
 
@@ -157,6 +194,21 @@ impl Sequences {
                     })
                 }
 
+                SequencesMessage::StartListeners => {
+                    let (sender, reciever) = tokio::sync::mpsc::channel(1);
+                    tokio::spawn(start_listener(
+                        state.devices.clone(),
+                        state.triggers.clone(),
+                        reciever,
+                    ));
+
+                    *self = Sequences::Running(SequencesState {
+                        listener_sender: Option::Some(sender),
+                        ..state.clone()
+                    });
+
+                    return Command::none();
+                }
                 _ => {}
             },
 
@@ -172,6 +224,7 @@ impl Sequences {
             Sequences::Error(msg) => Text::new(msg.clone()).into(),
             Sequences::Ready(state) => render_when_ready(state).into(),
             Sequences::ShouldExit => Text::new("exiting").into(),
+            Sequences::Running(state) => running(state).into(),
             Sequences::UnsavedCloseRequested(state) => {
                 let mut c = Column::new().width(Length::Fill).spacing(1);
 
@@ -219,11 +272,21 @@ impl Sequences {
     }
 }
 
+fn running(state: &mut SequencesState) -> Element<SequencesMessage> {
+    return Column::new()
+        .push(Text::new("Running"))
+        .push(
+            Button::new(&mut state.stop_button, Text::new("Stop"))
+                .on_press(SequencesMessage::StopListeners),
+        )
+        .into();
+}
+
 async fn load_sequences(
     devices: HashMap<String, Box<dyn DeviceTrait>>,
     triggers: HashMap<String, Box<dyn TriggerSource>>,
 ) -> Result<SequencesState, LoadError> {
-    let paths = fs::read_dir("./sequences").await; //TODO: this path should be relative to a userdata folder
+    let paths = fs::read_dir("./sequences").await; // TODO: this path should be relative to a userdata folder
     let mut sequences = Vec::<Sequence>::new();
     if paths.is_ok() {
         let mut paths = paths.unwrap();
@@ -262,9 +325,12 @@ async fn load_sequences(
         scroll: scrollable::State::new(),
         add_sequence_button: button::State::new(),
         save_button: button::State::new(),
+        start_button: button::State::new(),
+        stop_button: button::State::new(),
         devices: devices.clone(),
         triggers: triggers.clone(),
         tainted: false,
+        listener_sender: Option::None,
     });
 }
 
@@ -296,7 +362,10 @@ async fn delete_file(filename: String) -> Option<String> {
 }
 
 fn render_when_ready(state: &mut SequencesState) -> Scrollable<SequencesMessage> {
-    let mut c = Column::new().width(Length::Fill).spacing(1);
+    let mut c = Column::new().width(Length::Fill).spacing(1).push(
+        Button::new(&mut state.start_button, Text::new("Start"))
+            .on_press(SequencesMessage::StartListeners),
+    );
 
     let seqs: Element<_> = state
         .sequences
@@ -338,4 +407,39 @@ fn try_save(state: &mut SequencesState) -> Command<SequencesMessage> {
     }
 
     return Command::none();
+}
+
+async fn start_listener(
+    device_set: HashMap<String, Box<dyn DeviceTrait>>,
+    triggers: HashMap<String, Box<dyn TriggerSource>>,
+    mut listener: tokio::sync::mpsc::Receiver<ThreadActions>,
+) {
+    let (trigger_sequence, trigger_sequence_reciever) = watch::channel(sequencer::QueueEvent {
+        sequence_id: String::from("empty"),
+    });
+
+    let (task_handler_sender, task_handler_reciever) = watch::channel(());
+
+    let sequencer_queue = sequencer::watch_queue(
+        device_set,
+        trigger_sequence_reciever,
+        task_handler_reciever.clone(),
+    );
+
+    let trigger_manager =
+        triggers::watch_trigger_sources(triggers, trigger_sequence, task_handler_reciever.clone());
+    let mut listeners = Box::pin(future::try_join(trigger_manager, sequencer_queue).fuse());
+
+    let mut l = Box::pin(listener.recv().fuse());
+
+    select! {
+        _x = listeners => println!("Listeners finished"),
+        _v = l => {
+            println!("Told to stop");
+            task_handler_sender.send(()).unwrap();
+        }
+    }
+
+    listeners.await.unwrap();
+    println!("Finished listeners")
 }
