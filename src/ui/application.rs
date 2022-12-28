@@ -105,6 +105,7 @@ impl iced::Application for Application {
     }
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
+        // TODO: UI Event stream
         iced_native::subscription::events().map(Message::EventOccurred)
     }
 

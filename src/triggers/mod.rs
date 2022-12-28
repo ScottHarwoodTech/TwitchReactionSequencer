@@ -19,6 +19,7 @@ pub async fn watch_for_events(
     }
 }
 
+//TODO: this shit is a mess
 async fn race(
     rx: mpsc::Receiver<QueueEvent>,
     trigger_sequence_stream: watch::Sender<QueueEvent>,
@@ -37,7 +38,8 @@ async fn race_trigger(
     loop {
         select! {
             _x = interval.tick().fuse() => tx.send(QueueEvent {
-                sequence_id: String::from("default"),
+                trigger_source: TriggerSource::TwitchPubSub,
+                trigger_event_id: String::from("")
             })
             .await
             .unwrap(),
@@ -83,9 +85,36 @@ pub async fn get_available_trigger_sources(
     let mut trigger_sources: HashMap<String, Box<dyn triggers::TriggerSource>> = HashMap::new();
 
     trigger_sources.insert(
-        String::from("twitch_pub_sub"),
+        String::from(TriggerSource::TwitchPubSub.as_str()),
         Box::new(twitch_pub_sub::TwitchPubSub::new("lanaSidhe").await?),
     );
 
     return Ok(trigger_sources);
+}
+
+#[derive(Debug, Clone)]
+pub enum TriggerSource {
+    TwitchPubSub,
+    TwitchChat,
+}
+
+const TWITCH_CHAT: &str = "twitch_chat";
+const TWITCH_PUB_SUB: &str = "twitch_pub_sub";
+impl TriggerSource {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TriggerSource::TwitchChat => TWITCH_CHAT,
+            TriggerSource::TwitchPubSub => TWITCH_PUB_SUB,
+        }
+    }
+
+    pub fn from_str(val: &str) -> Self {
+        if val == TWITCH_CHAT {
+            return TriggerSource::TwitchChat;
+        } else if val == TWITCH_PUB_SUB {
+            return TriggerSource::TwitchPubSub;
+        } else {
+            panic!("Tried to construct an TriggerSource using an invalid string");
+        }
+    }
 }

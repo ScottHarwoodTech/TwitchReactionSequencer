@@ -1,7 +1,6 @@
 pub mod device;
 pub mod devices;
 pub mod reaction_sequence;
-
 use std::collections::HashMap;
 
 impl reaction_sequence::ReactionSequence {
@@ -21,6 +20,11 @@ impl reaction_sequence::ReactionSequence {
                 .await;
         }
     }
+
+    pub fn is_triggered_by_event(&self, event: QueueEvent) -> bool {
+        return self.trigger.trigger_id == event.trigger_source.as_str()
+            && self.trigger.trigger_event_id == event.trigger_event_id.as_str();
+    }
 }
 
 fn get_device_by_id<'a>(
@@ -32,27 +36,40 @@ fn get_device_by_id<'a>(
 
 use tokio::sync::watch;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct QueueEvent {
-    pub sequence_id: String,
+    pub trigger_source: TriggerSource,
+    pub trigger_event_id: String,
+}
+
+pub trait QueueEvent1 {
+    fn get_trigger_source(&self) -> TriggerSource;
 }
 
 use device::DeviceTrait;
 use std::error::Error;
 
+use crate::triggers::TriggerSource;
+
+use self::reaction_sequence::ReactionSequence;
+
 pub async fn watch_queue(
     device_set: HashMap<String, Box<dyn DeviceTrait>>,
+    sequences: Vec<ReactionSequence>,
     mut queue_reciever: watch::Receiver<QueueEvent>,
     task_handler_reciever: watch::Receiver<()>,
 ) -> Result<(), Box<dyn Error>> {
     println!("Started queue reciever");
 
     while queue_reciever.changed().await.is_ok() && !task_handler_reciever.has_changed().unwrap() {
+        let event = (*queue_reciever.borrow()).clone();
         println!("recieved = {:?}", *queue_reciever.borrow());
-        // let data = include_str!("../../sequences/default.json");
-        //let sequencer: reaction_sequence::ReactionSequence = serde_json::from_str(data)?;
-
-        // sequencer.play(&device_set).await;
+        for sequence in sequences.iter() {
+            if sequence.is_triggered_by_event(event.clone()) {
+                println!("Played Sequence = {:?}", sequence.clone());
+                sequence.play(&device_set).await;
+            }
+        }
     }
 
     return Ok(());

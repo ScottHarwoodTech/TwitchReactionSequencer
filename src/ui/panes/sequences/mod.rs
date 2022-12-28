@@ -1,4 +1,5 @@
 pub mod sequence;
+use crate::sequencer::reaction_sequence::ReactionSequence;
 use crate::triggers::triggers::TriggerSource;
 use crate::ui::fs_utils::LoadError;
 use crate::{sequencer, triggers, ThreadActions};
@@ -199,6 +200,12 @@ impl Sequences {
                     tokio::spawn(start_listener(
                         state.devices.clone(),
                         state.triggers.clone(),
+                        state
+                            .sequences
+                            .clone()
+                            .into_iter()
+                            .map(|sequence| sequence.to_reaction_seqeunce())
+                            .collect(),
                         reciever,
                     ));
 
@@ -412,16 +419,19 @@ fn try_save(state: &mut SequencesState) -> Command<SequencesMessage> {
 async fn start_listener(
     device_set: HashMap<String, Box<dyn DeviceTrait>>,
     triggers: HashMap<String, Box<dyn TriggerSource>>,
+    sequences: Vec<ReactionSequence>,
     mut listener: tokio::sync::mpsc::Receiver<ThreadActions>,
 ) {
     let (trigger_sequence, trigger_sequence_reciever) = watch::channel(sequencer::QueueEvent {
-        sequence_id: String::from("empty"),
+        trigger_source: triggers::TriggerSource::TwitchChat,
+        trigger_event_id: String::from(""),
     });
 
     let (task_handler_sender, task_handler_reciever) = watch::channel(());
 
     let sequencer_queue = sequencer::watch_queue(
         device_set,
+        sequences,
         trigger_sequence_reciever,
         task_handler_reciever.clone(),
     );
