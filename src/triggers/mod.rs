@@ -1,4 +1,5 @@
 pub mod triggers;
+pub mod twitch_chat;
 pub mod twitch_pub_sub;
 
 use crate::sequencer::QueueEvent;
@@ -7,7 +8,6 @@ use futures_util::{select, FutureExt};
 use std::collections::HashMap;
 use std::error::Error;
 use tokio::sync::{mpsc, watch};
-use tokio::time;
 
 pub async fn watch_for_events(
     mut rx: mpsc::Receiver<QueueEvent>,
@@ -26,29 +26,9 @@ async fn race(
     mut task_handler_reciever: watch::Receiver<()>,
 ) {
     select!(
-        x = watch_for_events(rx, trigger_sequence_stream).fuse() => println!("handler finished"),
-        v = task_handler_reciever.changed().fuse() => println!("dropped rx join_handle"),
+       _x = watch_for_events(rx, trigger_sequence_stream).fuse() => println!("handler finished"),
+        _v = task_handler_reciever.changed().fuse() => println!("dropped rx join_handle"),
     )
-}
-async fn race_trigger(
-    tx: mpsc::Sender<QueueEvent>,
-    mut task_handler_reciever: watch::Receiver<()>,
-) {
-    let mut interval = time::interval(time::Duration::from_secs(1));
-    loop {
-        select! {
-            _x = interval.tick().fuse() => tx.send(QueueEvent {
-                trigger_source: TriggerSource::TwitchPubSub,
-                trigger_event_id: String::from("")
-            })
-            .await
-            .unwrap(),
-            _v = task_handler_reciever.changed().fuse() => {
-                println!("Dropped interval trigger");
-                return;
-            }
-        }
-    }
 }
 
 pub async fn watch_trigger_sources(
@@ -74,9 +54,7 @@ pub async fn watch_trigger_sources(
         task_handler_reciever.clone(),
     ));
 
-    let trigger_interval = tokio::spawn(race_trigger(tx, task_handler_reciever.clone()));
-
-    let _ = future::join3(future::join_all(watchers), rx_join_handle, trigger_interval).await;
+    let _ = future::join(future::join_all(watchers), rx_join_handle).await;
     Ok(())
 }
 
@@ -86,7 +64,12 @@ pub async fn get_available_trigger_sources(
 
     trigger_sources.insert(
         String::from(TriggerSource::TwitchPubSub.as_str()),
-        Box::new(twitch_pub_sub::TwitchPubSub::new("lanaSidhe").await?),
+        Box::new(twitch_pub_sub::TwitchPubSub::new("lanasidhe").await?),
+    );
+
+    trigger_sources.insert(
+        String::from(TriggerSource::TwitchChat.as_str()),
+        Box::new(twitch_chat::TwitchChat::new(String::from("lanasidhe"))),
     );
 
     return Ok(trigger_sources);

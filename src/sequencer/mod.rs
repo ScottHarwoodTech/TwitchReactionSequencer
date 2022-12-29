@@ -42,10 +42,6 @@ pub struct QueueEvent {
     pub trigger_event_id: String,
 }
 
-pub trait QueueEvent1 {
-    fn get_trigger_source(&self) -> TriggerSource;
-}
-
 use device::DeviceTrait;
 use std::error::Error;
 
@@ -63,7 +59,7 @@ pub async fn watch_queue(
 
     while queue_reciever.changed().await.is_ok() && !task_handler_reciever.has_changed().unwrap() {
         let event = (*queue_reciever.borrow()).clone();
-        println!("recieved = {:?}", *queue_reciever.borrow());
+        println!("Sequencer Queue Recieved = {:?}", *queue_reciever.borrow());
         for sequence in sequences.iter() {
             if sequence.is_triggered_by_event(event.clone()) {
                 println!("Played Sequence = {:?}", sequence.clone());
