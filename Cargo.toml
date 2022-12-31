@@ -21,7 +21,7 @@ futures-util = { version = "0.3", default-features = false, features = ["sink", 
 native-tls="*"
 dotenv="*"
 textnonce="*"
-iced={version = "*", features=["tokio", "debug"], path="../iced" }
+iced={version = "*", features=["tokio", "debug"], git="https://github.com/iced-rs/iced", rev=  "61fd5b0050724a6b05f2b959c546a58cb6073de3"}
 iced_native={version="*", path="../iced/native"}
 iced_style={version="*", path="../iced/style"}
 iced_aw={version="*", git="https://github.com/iced-rs/iced_aw"}
