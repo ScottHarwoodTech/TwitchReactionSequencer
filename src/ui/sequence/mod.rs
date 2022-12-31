@@ -2,18 +2,18 @@ pub mod action;
 pub mod trigger;
 
 use crate::custom_widgets::horizontal_scrollable::{self};
-use crate::sequencer::device::{DeviceTrait, DevicesCollection};
+use crate::sequencer::device::{DevicesCollection};
 use crate::sequencer::reaction_sequence::{self, ReactionSequence};
-use crate::triggers::triggers::TriggerSource;
+
 use crate::triggers::TriggerCollection;
 use iced::{self, button, Button, Column, Text};
 use iced::{Element, Row};
-use std::collections::HashMap;
+
 use std::path::PathBuf;
-use tokio::fs;
+
 
 use self::action::ActionMessage;
-use uuid;
+
 
 // Drop down list of trigger sources,
 // Drop down list of actions on triggers
@@ -50,7 +50,7 @@ pub enum SequenceMessage {
 
 impl Sequence {
     pub fn get_filename(self) -> String {
-        return self.filename;
+        self.filename
     }
 
     pub fn from_existing(
@@ -65,7 +65,7 @@ impl Sequence {
             actions: sequence
                 .sequence
                 .into_iter()
-                .map(|a| action::Action::from_existing(devices.clone(), a.clone()))
+                .map(|a| action::Action::from_existing(devices.clone(), a))
                 .collect(),
             state: SequenceState::Ready,
             add_action_button: button::State::new(),
@@ -77,7 +77,7 @@ impl Sequence {
         };
     }
     pub fn to_reaction_seqeunce(&self) -> reaction_sequence::ReactionSequence {
-        return ReactionSequence {
+        ReactionSequence {
             name: self.name.clone(),
             trigger: self.trigger.to_reaction_sequence_trigger(),
             sequence: self
@@ -87,7 +87,7 @@ impl Sequence {
                 .map(|a| a.to_reaction_sequence_item())
                 .collect(),
             id: self.id.clone(),
-        };
+        }
     }
 
     pub async fn new(devices: DevicesCollection, triggers: TriggerCollection) -> Self {
@@ -102,9 +102,9 @@ impl Sequence {
             add_action_button: button::State::new(),
             delete_sequence_button: button::State::new(),
             scroll: horizontal_scrollable::State::new(),
-            filename: filename.clone(),
+            filename,
             name: String::from("Unnamed"),
-            id: id,
+            id,
         }
     }
 
@@ -140,7 +140,7 @@ impl Sequence {
         let trigger: Element<_> = self
             .trigger
             .view()
-            .map(move |message| SequenceMessage::TriggerMessage(message));
+            .map(SequenceMessage::TriggerMessage);
 
         r = r.push(trigger);
 
@@ -175,6 +175,6 @@ impl Sequence {
         );
 
         col = col.push(r);
-        return col.into();
+        col.into()
     }
 }

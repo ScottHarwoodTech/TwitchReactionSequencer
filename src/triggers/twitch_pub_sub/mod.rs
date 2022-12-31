@@ -31,11 +31,11 @@ use super::triggers::TriggerEvent;
 impl TwitchPubSub {
     pub async fn new(target_channel: &'static str) -> Result<TwitchPubSub, Box<dyn Error>> {
         let user_token = TwitchPubSub::get_user_token().await?;
-        return Ok(TwitchPubSub {
-            target_channel: target_channel,
-            user_token: user_token,
+        Ok(TwitchPubSub {
+            target_channel,
+            user_token,
             trigger_events: HashMap::new(),
-        });
+        })
     }
 
     async fn get_user_token() -> Result<UserToken, Box<dyn Error>> {
@@ -74,7 +74,7 @@ impl TwitchPubSub {
         let user_token = user_token.unwrap();
 
         println!("{:?}", user_token.is_elapsed());
-        return Ok(user_token);
+        Ok(user_token)
     }
 
     async fn auth_flow() -> Result<UserToken, Box<dyn Error>> {
@@ -139,7 +139,7 @@ impl TwitchPubSub {
         writeln!(
             file,
             "{}",
-            format!("TWITCH_TOKEN=\"{}\"", user_token.clone().token().secret())
+            format!("TWITCH_TOKEN=\"{}\"", user_token.token().secret())
         )?;
 
         writeln!(
@@ -151,7 +151,7 @@ impl TwitchPubSub {
             )
         )?;
 
-        return Ok(user_token);
+        Ok(user_token)
     }
 }
 
@@ -203,6 +203,6 @@ impl TriggerSource for TwitchPubSub {
     }
 
     fn get_events(&self) -> &HashMap<String, Box<dyn TriggerEvent>> {
-        return &self.trigger_events;
+        &self.trigger_events
     }
 }

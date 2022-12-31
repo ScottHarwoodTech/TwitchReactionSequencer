@@ -1,6 +1,6 @@
 use iced::{self, button, Button, Text};
 use iced::{pick_list, Column, Element, PickList};
-use std::collections::HashMap;
+
 
 use crate::sequencer::device::{DeviceTrait, DevicesCollection};
 use crate::sequencer::reaction_sequence::{self, ReactionSequenceItemSequence};
@@ -73,7 +73,7 @@ impl Action {
                 self.selected_device = Some(selected_device.clone());
 
                 if let Some(device) = self.devices.get(&selected_device) {
-                    let mut device_action_keys = device.get_actions().keys().into_iter();
+                    let mut device_action_keys = device.get_actions().keys();
                     self.selected_action = Some(device_action_keys.next().unwrap().to_string());
                 }
             }

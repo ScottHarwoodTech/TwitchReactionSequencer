@@ -10,7 +10,7 @@ use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
 use twitch_irc::TwitchIRCClient;
 
-use crate::sequencer::{self, QueueEvent};
+use crate::sequencer::{QueueEvent};
 
 use super::{triggers::TriggerEvent, triggers::TriggerSource};
 
@@ -22,10 +22,10 @@ pub struct TwitchChat {
 
 impl TwitchChat {
     pub fn new(target_channel: String) -> Self {
-        return TwitchChat {
-            target_channel: target_channel.clone(),
+        TwitchChat {
+            target_channel,
             trigger_events: HashMap::new(),
-        };
+        }
     }
 }
 
@@ -70,6 +70,6 @@ impl TriggerSource for TwitchChat {
     }
 
     fn get_events(&self) -> &HashMap<String, Box<dyn TriggerEvent>> {
-        return &self.trigger_events;
+        &self.trigger_events
     }
 }

@@ -12,11 +12,11 @@ pub struct Device {
 
 impl Device {
     pub fn new(id: &str, name: &str, actions: HashMap<String, Box<dyn DeviceAction>>) -> Device {
-        return Device {
+        Device {
             id: String::from(id),
             name: String::from(name),
-            actions: actions,
-        };
+            actions,
+        }
     }
 }
 
@@ -35,7 +35,7 @@ dyn_clone::clone_trait_object!(DeviceTrait);
 
 impl DeviceTrait for Device {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
-        return &self.actions;
+        &self.actions
     }
 }
 

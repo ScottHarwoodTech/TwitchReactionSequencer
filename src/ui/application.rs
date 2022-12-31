@@ -3,12 +3,12 @@ use super::panes::{
     settings::{Component, SettingsMessage, SettingsPane},
 };
 use crate::{
-    sequencer::device::{DeviceTrait, DevicesCollection},
+    sequencer::device::{DevicesCollection},
     settings::Settings,
-    triggers::{triggers::TriggerSource, TriggerCollection},
+    triggers::{TriggerCollection},
 };
 use iced::{button, Button, Column, Command, Row, Text};
-use std::collections::HashMap;
+
 
 #[derive(Debug)]
 pub enum Application {
@@ -53,7 +53,7 @@ fn init(
     devices: DevicesCollection,
     triggers: TriggerCollection,
 ) -> (Sequences, Command<SequencesMessage>) {
-    return Sequences::new((devices, triggers));
+    Sequences::new((devices, triggers))
 }
 
 impl iced::Application for Application {
@@ -79,7 +79,7 @@ impl iced::Application for Application {
     ) -> (Application, Command<Message>) {
         let sequences = init(flags.0, flags.1);
         let settings = SettingsPane::new(flags.2);
-        return (
+        (
             Application::Sequences(State {
                 sequences: sequences.0,
                 settings: settings.0,
@@ -92,7 +92,7 @@ impl iced::Application for Application {
                 sequences.1.map(Message::SequencesMessage),
                 settings.1.map(Message::SettingsMessage),
             ]),
-        );
+        )
     }
 
     fn should_exit(&self) -> bool {
@@ -125,9 +125,7 @@ impl iced::Application for Application {
             _ => {}
         }
         match self {
-            Application::Loading => match message {
-                _ => Command::none(),
-            },
+            Application::Loading => Command::none(),
 
             Application::Sequences(state) => match message {
                 Message::EventOccurred(e) => {
@@ -158,7 +156,7 @@ impl iced::Application for Application {
             }
         }
 
-        return page.into();
+        page.into()
     }
 }
 

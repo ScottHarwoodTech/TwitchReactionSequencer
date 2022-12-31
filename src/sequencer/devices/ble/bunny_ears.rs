@@ -23,11 +23,11 @@ struct LeftEar {
 
 impl LeftEar {
     pub fn new(id: &str, name: &str, mb: Peripheral) -> LeftEar {
-        return LeftEar {
+        LeftEar {
             id: String::from(id),
             name: String::from(name),
-            mb: mb.clone(),
-        };
+            mb,
+        }
     }
 }
 
@@ -43,7 +43,7 @@ impl DeviceAction for LeftEar {
             .unwrap();
         let cmd = vec![0x48, 0x31, 0x38, 0x30, 0xA];
         self.mb
-            .write(&rx_char, &cmd, WriteType::WithoutResponse)
+            .write(rx_char, &cmd, WriteType::WithoutResponse)
             .await
             .unwrap();
     }
@@ -58,11 +58,11 @@ struct RightEar {
 
 impl RightEar {
     pub fn new(id: &str, name: &str, mb: Peripheral) -> RightEar {
-        return RightEar {
+        RightEar {
             id: String::from(id),
             name: String::from(name),
-            mb: mb.clone(),
-        };
+            mb,
+        }
     }
 }
 
@@ -76,7 +76,7 @@ impl DeviceAction for RightEar {
             .unwrap();
         let cmd = vec![0x48, 0x32, 0x38, 0x30, 0xA];
         self.mb
-            .write(&rx_char, &cmd, WriteType::WithoutResponse)
+            .write(rx_char, &cmd, WriteType::WithoutResponse)
             .await
             .unwrap();
     }
@@ -95,8 +95,8 @@ impl BunnyEars {
                                                             //TODO: Recreate as find device by id?
 
         BunnyEars {
-            id: id,
-            name: name,
+            id,
+            name,
             actions: create_actions(&microbit),
         }
     }
@@ -104,7 +104,7 @@ impl BunnyEars {
 
 impl DeviceTrait for BunnyEars {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
-        return &self.actions;
+        &self.actions
     }
 }
 
@@ -123,7 +123,7 @@ pub async fn setup(
         )),
     );
 
-    return devices;
+    devices
 }
 
 async fn find_mb(peripherals: &Vec<Peripheral>) -> Option<Peripheral> {
@@ -155,5 +155,5 @@ fn create_actions(mb: &Peripheral) -> HashMap<String, Box<dyn DeviceAction>> {
         Box::new(RightEar::new("rightEar", "Right Ear", mb.clone())),
     );
 
-    return actions;
+    actions
 }

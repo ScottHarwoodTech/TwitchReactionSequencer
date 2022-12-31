@@ -1,8 +1,8 @@
-use crate::sequencer::device::{DeviceTrait, DevicesCollection};
+use crate::sequencer::device::{DevicesCollection};
 use crate::sequencer::devices::ble::bunny_ears;
 use btleplug::api::{Central, Manager as _, ScanFilter};
 use btleplug::platform::{Manager, Peripheral};
-use std::collections::HashMap;
+
 use std::error::Error;
 use std::time::Duration;
 use tokio::time;
@@ -11,7 +11,7 @@ pub async fn get_ble_peripherals() -> Result<Vec<Peripheral>, Box<dyn Error>> {
     let manager = Manager::new().await.unwrap();
 
     let adapters = manager.adapters().await?;
-    let central = adapters.into_iter().nth(0).unwrap();
+    let central = adapters.into_iter().next().unwrap();
 
     central.start_scan(ScanFilter::default()).await?;
     // instead of waiting, you can use central.events() to get a stream which will
@@ -28,5 +28,5 @@ pub async fn setup_ble_devices(
 
     let device_set = bunny_ears::setup(device_set, ble_peripharals).await;
 
-    return Ok(device_set);
+    Ok(device_set)
 }

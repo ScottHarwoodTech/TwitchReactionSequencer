@@ -737,7 +737,7 @@ impl State {
         self.offset = Offset::Absolute(
             (self.offset.absolute(bounds, content_bounds) - delta_y)
                 .max(0.0)
-                .min((content_bounds.height - bounds.height) as f32),
+                .min(content_bounds.height - bounds.height),
         );
     }
 

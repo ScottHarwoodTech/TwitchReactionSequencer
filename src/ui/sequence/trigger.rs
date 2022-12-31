@@ -1,9 +1,9 @@
 use iced;
 use iced::{pick_list, Column, Element, PickList};
-use std::collections::HashMap;
-use std::hash::Hash;
 
-use crate::sequencer::reaction_sequence::{self, ReactionSequence, ReactionSequenceTrigger};
+
+
+use crate::sequencer::reaction_sequence::{self, ReactionSequenceTrigger};
 use crate::triggers::triggers::TriggerSource;
 use crate::triggers::TriggerCollection;
 
@@ -63,7 +63,7 @@ impl Trigger {
                 self.selected_trigger = Some(selected_device.clone());
 
                 if let Some(device) = self.triggers.get(&selected_device) {
-                    let mut device_action_keys = device.get_events().keys().into_iter();
+                    let mut device_action_keys = device.get_events().keys();
 
                     let device_action = device_action_keys.next();
 
@@ -91,7 +91,7 @@ impl Trigger {
             &mut self.triggers_pick_list,
             keys,
             self.selected_trigger.clone(),
-            |v| TriggerMessage::TriggerSelected(v),
+            TriggerMessage::TriggerSelected,
         );
 
         let device = self

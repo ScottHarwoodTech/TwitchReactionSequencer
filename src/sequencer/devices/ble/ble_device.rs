@@ -10,17 +10,17 @@ pub struct BleDevice {
 
 impl BleDevice {
     pub fn new(id: &str, name: &str, actions: HashMap<String, Box<dyn DeviceAction>>) -> BleDevice {
-        return BleDevice {
+        BleDevice {
             id: String::from(id),
             name: String::from(name),
-            actions: actions,
-        };
+            actions,
+        }
     }
 }
 
 impl DeviceTrait for BleDevice {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
-        return &self.actions;
+        &self.actions
     }
 }
 

@@ -1,14 +1,14 @@
 pub mod sequence;
 use crate::sequencer::device::DevicesCollection;
 use crate::sequencer::reaction_sequence::ReactionSequence;
-use crate::triggers::triggers::TriggerSource;
+
 use crate::triggers::TriggerCollection;
 use crate::ui::fs_utils::LoadError;
 use crate::{sequencer, triggers, ThreadActions};
-use crate::{sequencer::device::DeviceTrait, ui::fs_utils::SaveError};
+use crate::{ui::fs_utils::SaveError};
 use futures_util::select;
 use futures_util::{future, FutureExt};
-use iced::futures::channel::oneshot;
+
 use iced::{
     self, button, keyboard, scrollable, Button, Column, Length, Row, Rule, Scrollable, Text,
 };
@@ -17,7 +17,7 @@ use iced_native::{window, Event};
 use sequence::{Sequence, SequenceMessage};
 use tokio::sync::watch;
 
-use std::collections::HashMap;
+
 use tokio::fs;
 
 #[derive(Debug, Clone)]
@@ -60,9 +60,9 @@ pub enum Sequences {
     Running(SequencesState),
 }
 
-pub async fn bury(v: tokio::sync::mpsc::Sender<ThreadActions>) -> () {
+pub async fn bury(v: tokio::sync::mpsc::Sender<ThreadActions>) {
     v.send(ThreadActions::Stop).await.unwrap();
-    return ();
+    
 }
 
 impl Sequences {
@@ -112,9 +112,9 @@ impl Sequences {
             Sequences::Running(state) => match message {
                 SequencesMessage::StopListeners => {
                     if state.listener_sender.is_some() {
-                        let listender_sender = state.clone().listener_sender.unwrap().clone();
+                        let listender_sender = state.clone().listener_sender.unwrap();
                         return Command::perform(
-                            bury(listender_sender.clone()),
+                            bury(listender_sender),
                             SequencesMessage::StoppedListeners,
                         );
                     }
@@ -230,7 +230,7 @@ impl Sequences {
             Sequences::Error(msg) => Text::new(msg.clone()).into(),
             Sequences::Ready(state) => render_when_ready(state).into(),
             Sequences::ShouldExit => Text::new("exiting").into(),
-            Sequences::Running(state) => running(state).into(),
+            Sequences::Running(state) => running(state),
             Sequences::UnsavedCloseRequested(state) => {
                 let mut c = Column::new().width(Length::Fill).spacing(1);
 
@@ -326,8 +326,8 @@ async fn load_sequences(
         return Err(LoadError::FileError);
     };
 
-    return Ok(SequencesState {
-        sequences: sequences,
+    Ok(SequencesState {
+        sequences,
         scroll: scrollable::State::new(),
         add_sequence_button: button::State::new(),
         save_button: button::State::new(),
@@ -337,7 +337,7 @@ async fn load_sequences(
         triggers: triggers.clone(),
         tainted: false,
         listener_sender: Option::None,
-    });
+    })
 }
 
 async fn save_sequences(sequences: Vec<Sequence>) -> Option<SaveError> {
@@ -354,18 +354,18 @@ async fn save_sequences(sequences: Vec<Sequence>) -> Option<SaveError> {
             .unwrap();
     }
 
-    return None;
+    None
 }
 
 async fn delete_file(filename: String) -> Option<String> {
-    if !fs::metadata(filename.clone()).await.is_ok() {
+    if fs::metadata(filename.clone()).await.is_err() {
         return None;
     }
     if let Err(v) = fs::remove_file(filename).await {
         return Some(v.to_string());
     };
 
-    return None;
+    None
 }
 
 fn render_when_ready(state: &mut SequencesState) -> Scrollable<SequencesMessage> {
@@ -413,7 +413,7 @@ fn try_save(state: &mut SequencesState) -> Command<SequencesMessage> {
         );
     }
 
-    return Command::none();
+    Command::none()
 }
 
 async fn start_listener(

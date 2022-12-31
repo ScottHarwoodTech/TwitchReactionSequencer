@@ -7,7 +7,7 @@ impl reaction_sequence::ReactionSequence {
     pub async fn play(&self, device_set: &HashMap<String, Box<dyn device::DeviceTrait>>) {
         let sequence = &self.sequence;
         for method in sequence {
-            let device = get_device_by_id(&device_set, &method.device_id);
+            let device = get_device_by_id(device_set, &method.device_id);
             let method_arguments = method.arguments.clone();
 
             println!("{}", &method.device_action_id);
@@ -68,5 +68,5 @@ pub async fn watch_queue(
         }
     }
 
-    return Ok(());
+    Ok(())
 }

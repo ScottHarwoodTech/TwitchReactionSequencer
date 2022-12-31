@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+
 
 use iced::{Command, Element};
 use iced_native::widget::Column;
 mod configured_device;
 use crate::{
-    sequencer::device::{DeviceTrait, DevicesCollection},
+    sequencer::device::{DevicesCollection},
     settings::Settings,
 };
 
@@ -28,12 +28,12 @@ pub enum SettingsMessage {
 
 impl Component<SettingsMessage> for SettingsPane {
     fn new(settings: Settings) -> (SettingsPane, Command<SettingsMessage>) {
-        return (
+        (
             SettingsPane {
                 devices: Option::None,
             },
             Command::perform(format_configured_devices(settings), SettingsMessage::Loaded),
-        );
+        )
     }
 
     fn update(&mut self, message: SettingsMessage) -> Command<SettingsMessage> {
@@ -42,7 +42,7 @@ impl Component<SettingsMessage> for SettingsPane {
                 *self = SettingsPane {
                     devices: Option::Some(devices.clone()),
                 };
-                return Command::none();
+                Command::none()
             }
         }
     }

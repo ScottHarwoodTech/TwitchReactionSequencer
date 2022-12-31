@@ -21,8 +21,8 @@ pub struct Timer {
 impl Timer {
     pub fn new(id: String, name: String) -> Self {
         return Timer {
-            id: id,
-            name: name,
+            id,
+            name,
             actions: create_actions(),
         };
     }
@@ -30,7 +30,7 @@ impl Timer {
 
 impl DeviceTrait for Timer {
     fn get_actions(&self) -> &HashMap<String, Box<dyn device::DeviceAction>> {
-        return &self.actions;
+        &self.actions
     }
 }
 
@@ -42,10 +42,10 @@ struct Delay {
 
 impl Delay {
     pub fn new(id: String, name: String) -> Delay {
-        return Delay {
-            id: String::from(id),
-            name: String::from(name),
-        };
+        Delay {
+            id,
+            name,
+        }
     }
 }
 
@@ -68,7 +68,7 @@ pub fn setup(
         )),
     );
 
-    return devices;
+    devices
 }
 
 fn create_actions() -> HashMap<String, Box<dyn device::DeviceAction>> {
@@ -82,5 +82,5 @@ fn create_actions() -> HashMap<String, Box<dyn device::DeviceAction>> {
         )),
     );
 
-    return actions;
+    actions
 }

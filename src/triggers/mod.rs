@@ -7,7 +7,7 @@ use futures_util::future::{self};
 use futures_util::{select, FutureExt};
 use std::collections::HashMap;
 use std::error::Error;
-use std::hash::Hash;
+
 use tokio::sync::{mpsc, watch};
 
 pub async fn watch_for_events(
@@ -73,7 +73,7 @@ pub async fn get_available_trigger_sources() -> Result<TriggerCollection, Box<dy
         Box::new(twitch_chat::TwitchChat::new(String::from(TARGET_CHANNEL))),
     );
 
-    return Ok(trigger_sources);
+    Ok(trigger_sources)
 }
 
 #[derive(Debug, Clone)]
@@ -94,7 +94,7 @@ impl TriggerSource {
 
     pub fn from_str(val: &str) -> Self {
         if val == TWITCH_CHAT {
-            return TriggerSource::TwitchChat;
+            TriggerSource::TwitchChat
         } else if val == TWITCH_PUB_SUB {
             return TriggerSource::TwitchPubSub;
         } else {

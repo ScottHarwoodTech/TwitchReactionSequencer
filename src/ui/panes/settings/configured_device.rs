@@ -27,7 +27,7 @@ pub async fn format_configured_devices(settings: Settings) -> DevicesCollection 
 
         devices.insert(String::from(device_id), parsed_device);
     }
-    return devices;
+    devices
 }
 
 pub async fn parse_device(map: &Map<String, Value>) -> Box<dyn DeviceTrait> {
@@ -51,5 +51,5 @@ pub async fn parse_device(map: &Map<String, Value>) -> Box<dyn DeviceTrait> {
             DeviceTypes::Delay => Box::new(Timer::new(id.clone(), name.clone())),
         };
 
-    return device;
+    device
 }
