@@ -1,6 +1,8 @@
 pub mod sequence;
+use crate::sequencer::device::DevicesCollection;
 use crate::sequencer::reaction_sequence::ReactionSequence;
 use crate::triggers::triggers::TriggerSource;
+use crate::triggers::TriggerCollection;
 use crate::ui::fs_utils::LoadError;
 use crate::{sequencer, triggers, ThreadActions};
 use crate::{sequencer::device::DeviceTrait, ui::fs_utils::SaveError};
@@ -24,8 +26,8 @@ pub struct SequencesState {
     scroll: scrollable::State,
     add_sequence_button: button::State,
     save_button: button::State,
-    devices: HashMap<String, Box<dyn DeviceTrait>>,
-    triggers: HashMap<String, Box<dyn TriggerSource>>,
+    devices: DevicesCollection,
+    triggers: TriggerCollection,
     tainted: bool,
     start_button: button::State,
     stop_button: button::State,
@@ -65,10 +67,7 @@ pub async fn bury(v: tokio::sync::mpsc::Sender<ThreadActions>) -> () {
 
 impl Sequences {
     pub fn new(
-        flags: (
-            HashMap<String, Box<dyn DeviceTrait>>,
-            HashMap<String, Box<dyn TriggerSource>>,
-        ),
+        flags: (DevicesCollection, TriggerCollection),
     ) -> (Sequences, Command<SequencesMessage>) {
         (
             Sequences::Loading,
@@ -290,10 +289,10 @@ fn running(state: &mut SequencesState) -> Element<SequencesMessage> {
 }
 
 async fn load_sequences(
-    devices: HashMap<String, Box<dyn DeviceTrait>>,
-    triggers: HashMap<String, Box<dyn TriggerSource>>,
+    devices: DevicesCollection,
+    triggers: TriggerCollection,
 ) -> Result<SequencesState, LoadError> {
-    let paths = fs::read_dir("./sequences").await; // TODO: this path should be relative to a userdata folder
+    let paths = fs::read_dir("./TRS/sequences").await; // TODO: this path should be relative to a userdata folder
     let mut sequences = Vec::<Sequence>::new();
     if paths.is_ok() {
         let mut paths = paths.unwrap();
@@ -349,6 +348,7 @@ async fn save_sequences(sequences: Vec<Sequence>) -> Option<SaveError> {
             return Some(SaveError::FormatError(json.unwrap_err().to_string()));
         }
 
+        println!("{:?}", sequence.clone().get_filename());
         fs::write(&sequence.get_filename(), &json.unwrap())
             .await
             .unwrap();
@@ -417,8 +417,8 @@ fn try_save(state: &mut SequencesState) -> Command<SequencesMessage> {
 }
 
 async fn start_listener(
-    device_set: HashMap<String, Box<dyn DeviceTrait>>,
-    triggers: HashMap<String, Box<dyn TriggerSource>>,
+    device_set: DevicesCollection,
+    triggers: TriggerCollection,
     sequences: Vec<ReactionSequence>,
     mut listener: tokio::sync::mpsc::Receiver<ThreadActions>,
 ) {

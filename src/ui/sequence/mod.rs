@@ -2,9 +2,10 @@ pub mod action;
 pub mod trigger;
 
 use crate::custom_widgets::horizontal_scrollable::{self};
-use crate::sequencer::device::DeviceTrait;
+use crate::sequencer::device::{DeviceTrait, DevicesCollection};
 use crate::sequencer::reaction_sequence::{self, ReactionSequence};
 use crate::triggers::triggers::TriggerSource;
+use crate::triggers::TriggerCollection;
 use iced::{self, button, Button, Column, Text};
 use iced::{Element, Row};
 use std::collections::HashMap;
@@ -22,7 +23,7 @@ use uuid;
 
 #[derive(Debug, Clone)]
 pub struct Sequence {
-    devices: HashMap<String, Box<dyn DeviceTrait>>,
+    devices: DevicesCollection,
     trigger: trigger::Trigger,
     actions: Vec<action::Action>,
     state: SequenceState,
@@ -55,8 +56,8 @@ impl Sequence {
     pub fn from_existing(
         sequence: reaction_sequence::ReactionSequence,
         filename: PathBuf,
-        devices: HashMap<String, Box<dyn DeviceTrait>>,
-        triggers: HashMap<String, Box<dyn TriggerSource>>,
+        devices: DevicesCollection,
+        triggers: TriggerCollection,
     ) -> Self {
         return Sequence {
             devices: devices.clone(),
@@ -89,12 +90,9 @@ impl Sequence {
         };
     }
 
-    pub async fn new(
-        devices: HashMap<String, Box<dyn DeviceTrait>>,
-        triggers: HashMap<String, Box<dyn TriggerSource>>,
-    ) -> Self {
+    pub async fn new(devices: DevicesCollection, triggers: TriggerCollection) -> Self {
         let id = uuid::Uuid::new_v4().to_hyphenated().to_string();
-        let filename = format!("./sequences/{}.json", &id); //TODO: shouldnt be here
+        let filename = format!("./TRS/sequences/{}.json", &id); //TODO: shouldnt be here
 
         Sequence {
             trigger: trigger::Trigger::new(triggers),

@@ -7,6 +7,7 @@ use futures_util::future::{self};
 use futures_util::{select, FutureExt};
 use std::collections::HashMap;
 use std::error::Error;
+use std::hash::Hash;
 use tokio::sync::{mpsc, watch};
 
 pub async fn watch_for_events(
@@ -32,7 +33,7 @@ async fn race(
 }
 
 pub async fn watch_trigger_sources(
-    trigger_sources_map: HashMap<String, Box<dyn triggers::TriggerSource>>,
+    trigger_sources_map: TriggerCollection,
     trigger_sequence_stream: watch::Sender<QueueEvent>,
     task_handler_reciever: watch::Receiver<()>,
 ) -> Result<(), Box<dyn Error>> {
@@ -57,19 +58,19 @@ pub async fn watch_trigger_sources(
     let _ = future::join(future::join_all(watchers), rx_join_handle).await;
     Ok(())
 }
+const TARGET_CHANNEL: &str = "scootscoot2000";
 
-pub async fn get_available_trigger_sources(
-) -> Result<HashMap<String, Box<dyn triggers::TriggerSource>>, Box<dyn Error>> {
-    let mut trigger_sources: HashMap<String, Box<dyn triggers::TriggerSource>> = HashMap::new();
+pub async fn get_available_trigger_sources() -> Result<TriggerCollection, Box<dyn Error>> {
+    let mut trigger_sources: TriggerCollection = HashMap::new();
 
     trigger_sources.insert(
         String::from(TriggerSource::TwitchPubSub.as_str()),
-        Box::new(twitch_pub_sub::TwitchPubSub::new("lanasidhe").await?),
+        Box::new(twitch_pub_sub::TwitchPubSub::new(TARGET_CHANNEL).await?),
     );
 
     trigger_sources.insert(
         String::from(TriggerSource::TwitchChat.as_str()),
-        Box::new(twitch_chat::TwitchChat::new(String::from("lanasidhe"))),
+        Box::new(twitch_chat::TwitchChat::new(String::from(TARGET_CHANNEL))),
     );
 
     return Ok(trigger_sources);
@@ -101,3 +102,5 @@ impl TriggerSource {
         }
     }
 }
+
+pub type TriggerCollection = HashMap<String, Box<dyn triggers::TriggerSource>>;

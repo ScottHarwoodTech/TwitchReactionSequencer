@@ -47,10 +47,10 @@ use std::error::Error;
 
 use crate::triggers::TriggerSource;
 
-use self::reaction_sequence::ReactionSequence;
+use self::{device::DevicesCollection, reaction_sequence::ReactionSequence};
 
 pub async fn watch_queue(
-    device_set: HashMap<String, Box<dyn DeviceTrait>>,
+    device_set: DevicesCollection,
     sequences: Vec<ReactionSequence>,
     mut queue_reciever: watch::Receiver<QueueEvent>,
     task_handler_reciever: watch::Receiver<()>,

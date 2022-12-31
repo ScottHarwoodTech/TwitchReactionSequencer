@@ -5,6 +5,7 @@
     "description": "A sequence of actions to run when a reaction is triggered ",
     "type": "object",
     "properties": {},
+    "valid": true,
     "definitions": {
         "ReactionSequence": {
             "type": "object",

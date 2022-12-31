@@ -1,25 +1,50 @@
+use std::collections::HashMap;
+
 use iced::{Command, Element};
 use iced_native::widget::Column;
+mod configured_device;
+use crate::{
+    sequencer::device::{DeviceTrait, DevicesCollection},
+    settings::Settings,
+};
+
+use self::configured_device::format_configured_devices;
 
 #[derive(Debug, Clone)]
-pub struct Settings {}
+pub struct SettingsPane {
+    devices: Option<DevicesCollection>,
+}
 
 pub trait Component<Message>: Sized {
     fn update(&mut self, message: Message) -> Command<Message>;
     fn view(&self) -> iced::Element<'_, Message>;
-    fn new() -> (Self, Command<Message>);
+    fn new(settings: Settings) -> (Self, Command<Message>);
 }
 
 #[derive(Debug, Clone)]
-pub enum SettingsMessage {}
+pub enum SettingsMessage {
+    Loaded(DevicesCollection),
+}
 
-impl Component<SettingsMessage> for Settings {
-    fn new() -> (Settings, Command<SettingsMessage>) {
-        (Settings {}, Command::none())
+impl Component<SettingsMessage> for SettingsPane {
+    fn new(settings: Settings) -> (SettingsPane, Command<SettingsMessage>) {
+        return (
+            SettingsPane {
+                devices: Option::None,
+            },
+            Command::perform(format_configured_devices(settings), SettingsMessage::Loaded),
+        );
     }
 
-    fn update(&mut self, _message: SettingsMessage) -> Command<SettingsMessage> {
-        return Command::none();
+    fn update(&mut self, message: SettingsMessage) -> Command<SettingsMessage> {
+        match message {
+            SettingsMessage::Loaded(devices) => {
+                *self = SettingsPane {
+                    devices: Option::Some(devices.clone()),
+                };
+                return Command::none();
+            }
+        }
     }
 
     fn view(&self) -> Element<'_, SettingsMessage> {

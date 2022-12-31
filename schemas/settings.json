@@ -1,0 +1,49 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/output/schema",
+    "$id": "https://github.com/ScottHarwoodTech/TwitchReactionSequencer/src/schemas/settings.json",
+    "title": "Settings",
+    "description": "A config file for TwitchReactionSequencer",
+    "type": "object",
+    "properties": {},
+    "valid": true,
+    "definitions": {
+        "Settings": {
+            "type": "object",
+            "required": [
+                "configured_devices"
+            ],
+            "properties": {
+                "configured_devices": {
+                    "type": "array",
+                    "items": {
+                        "oneof": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "The friendly name of a device"
+                                    },
+                                    "id": {
+                                        "type": "string",
+                                        "description": "Id of the device"
+                                    },
+                                    "port": "string",
+                                    "type": {
+                                        "const": "BUNNY_EARS"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                "configured_trigger_sources": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

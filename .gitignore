@@ -10,5 +10,5 @@ Cargo.lock
 **/*.rs.bk
 
 .env
-sequences
+TRS
 !src/ui/paines/sequences

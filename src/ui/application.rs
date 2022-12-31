@@ -1,8 +1,12 @@
 use super::panes::{
     sequences::{Sequences, SequencesMessage},
-    settings::{Component, Settings, SettingsMessage},
+    settings::{Component, SettingsMessage, SettingsPane},
 };
-use crate::{sequencer::device::DeviceTrait, triggers::triggers::TriggerSource};
+use crate::{
+    sequencer::device::{DeviceTrait, DevicesCollection},
+    settings::Settings,
+    triggers::{triggers::TriggerSource, TriggerCollection},
+};
 use iced::{button, Button, Column, Command, Row, Text};
 use std::collections::HashMap;
 
@@ -22,7 +26,7 @@ pub struct Buttons {
 #[derive(Debug, Clone)]
 pub struct State {
     sequences: Sequences,
-    settings: Settings,
+    settings: SettingsPane,
     buttons: Buttons,
 }
 
@@ -46,8 +50,8 @@ pub enum Message {
 }
 
 fn init(
-    devices: HashMap<String, Box<dyn DeviceTrait>>,
-    triggers: HashMap<String, Box<dyn TriggerSource>>,
+    devices: DevicesCollection,
+    triggers: TriggerCollection,
 ) -> (Sequences, Command<SequencesMessage>) {
     return Sequences::new((devices, triggers));
 }
@@ -55,10 +59,7 @@ fn init(
 impl iced::Application for Application {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = (
-        HashMap<String, Box<dyn DeviceTrait>>,
-        HashMap<String, Box<dyn TriggerSource>>,
-    );
+    type Flags = (DevicesCollection, TriggerCollection, Settings);
 
     type Theme = iced::Theme;
 
@@ -74,13 +75,10 @@ impl iced::Application for Application {
     }
 
     fn new(
-        flags: (
-            HashMap<String, Box<dyn DeviceTrait>>,
-            HashMap<String, Box<dyn TriggerSource>>,
-        ),
+        flags: (DevicesCollection, TriggerCollection, Settings),
     ) -> (Application, Command<Message>) {
         let sequences = init(flags.0, flags.1);
-        let settings = Settings::new();
+        let settings = SettingsPane::new(flags.2);
         return (
             Application::Sequences(State {
                 sequences: sequences.0,

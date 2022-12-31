@@ -11,6 +11,18 @@
                     "src/sequences/*.json"
                 ],
                 "url": "./src/schemas/reactionSequence.json"
+            },
+            {
+                "fileMatch": [
+                    "TRS/sequences/*.json"
+                ],
+                "url": "./schemas/reactionSequence.json"
+            },
+            {
+                "fileMatch": [
+                    "TRS/settings.json"
+                ],
+                "url": "./schemas/settings.json"
             }
         ]
     }

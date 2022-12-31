@@ -1,4 +1,4 @@
-use crate::sequencer::device;
+use crate::sequencer::device::{self, DeviceTrait};
 
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -12,13 +12,36 @@ const ACTION_DELAY_ID: &str = "delay";
 const ACTION_DELAY_NAME: &str = "Delay";
 
 #[derive(Debug, Clone)]
+pub struct Timer {
+    id: String,
+    name: String,
+    actions: HashMap<String, Box<dyn device::DeviceAction>>,
+}
+
+impl Timer {
+    pub fn new(id: String, name: String) -> Self {
+        return Timer {
+            id: id,
+            name: name,
+            actions: create_actions(),
+        };
+    }
+}
+
+impl DeviceTrait for Timer {
+    fn get_actions(&self) -> &HashMap<String, Box<dyn device::DeviceAction>> {
+        return &self.actions;
+    }
+}
+
+#[derive(Debug, Clone)]
 struct Delay {
     id: String,
     name: String,
 }
 
 impl Delay {
-    pub fn new(id: &str, name: &str) -> Delay {
+    pub fn new(id: String, name: String) -> Delay {
         return Delay {
             id: String::from(id),
             name: String::from(name),
@@ -53,7 +76,10 @@ fn create_actions() -> HashMap<String, Box<dyn device::DeviceAction>> {
 
     actions.insert(
         String::from("delay"),
-        Box::new(Delay::new(ACTION_DELAY_ID, ACTION_DELAY_NAME)),
+        Box::new(Delay::new(
+            String::from(ACTION_DELAY_ID),
+            String::from(ACTION_DELAY_NAME),
+        )),
     );
 
     return actions;

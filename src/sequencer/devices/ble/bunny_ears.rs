@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::sequencer::device::DeviceTrait;
+use crate::sequencer::device::{DeviceTrait, DevicesCollection};
 use async_trait::async_trait;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
@@ -26,7 +26,7 @@ impl LeftEar {
         return LeftEar {
             id: String::from(id),
             name: String::from(name),
-            mb: mb,
+            mb: mb.clone(),
         };
     }
 }
@@ -61,7 +61,7 @@ impl RightEar {
         return RightEar {
             id: String::from(id),
             name: String::from(name),
-            mb: mb,
+            mb: mb.clone(),
         };
     }
 }
@@ -82,11 +82,37 @@ impl DeviceAction for RightEar {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct BunnyEars {
+    id: String,
+    name: String,
+    actions: HashMap<String, Box<dyn DeviceAction>>,
+}
+
+impl BunnyEars {
+    pub async fn new(id: String, name: String, peripherals: &Vec<Peripheral>) -> Self {
+        let microbit = find_mb(peripherals).await.unwrap(); //TODO: Handle is none
+                                                            //TODO: Recreate as find device by id?
+
+        BunnyEars {
+            id: id,
+            name: name,
+            actions: create_actions(&microbit),
+        }
+    }
+}
+
+impl DeviceTrait for BunnyEars {
+    fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
+        return &self.actions;
+    }
+}
+
 pub async fn setup(
-    mut devices: HashMap<String, Box<dyn DeviceTrait>>,
+    mut devices: DevicesCollection,
     peripherals: Vec<Peripheral>,
-) -> HashMap<String, Box<dyn DeviceTrait>> {
-    let mb = find_mb(peripherals).await.unwrap();
+) -> DevicesCollection {
+    let mb = find_mb(&peripherals).await.unwrap();
     println!("found mb");
     devices.insert(
         DEVICE_ID.to_string(),
@@ -100,7 +126,7 @@ pub async fn setup(
     return devices;
 }
 
-async fn find_mb(peripherals: Vec<Peripheral>) -> Option<Peripheral> {
+async fn find_mb(peripherals: &Vec<Peripheral>) -> Option<Peripheral> {
     for p in peripherals {
         if p.properties()
             .await
@@ -110,7 +136,7 @@ async fn find_mb(peripherals: Vec<Peripheral>) -> Option<Peripheral> {
             .iter()
             .any(|name| name.contains("BBC micro:bit"))
         {
-            return Some(p);
+            return Some(p.clone());
         }
     }
 

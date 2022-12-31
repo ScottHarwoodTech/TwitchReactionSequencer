@@ -39,4 +39,4 @@ impl DeviceTrait for Device {
     }
 }
 
-unsafe impl Send for Device {}
+pub type DevicesCollection = HashMap<String, Box<dyn DeviceTrait>>;

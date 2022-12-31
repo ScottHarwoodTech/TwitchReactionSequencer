@@ -2,7 +2,7 @@ use iced::{self, button, Button, Text};
 use iced::{pick_list, Column, Element, PickList};
 use std::collections::HashMap;
 
-use crate::sequencer::device::DeviceTrait;
+use crate::sequencer::device::{DeviceTrait, DevicesCollection};
 use crate::sequencer::reaction_sequence::{self, ReactionSequenceItemSequence};
 
 // Drop down list of trigger sources,
@@ -14,7 +14,7 @@ use crate::sequencer::reaction_sequence::{self, ReactionSequenceItemSequence};
 pub struct Action {
     selected_device: Option<String>,
     selected_action: Option<String>,
-    devices: HashMap<String, Box<dyn DeviceTrait>>,
+    devices: DevicesCollection,
     devices_pick_list: pick_list::State<String>,
     action_pick_list: pick_list::State<String>,
     delete_button: button::State,
@@ -31,7 +31,7 @@ pub enum ActionMessage {
 
 impl Action {
     pub fn from_existing(
-        devices: HashMap<String, Box<dyn DeviceTrait>>,
+        devices: DevicesCollection,
         sequence_event: reaction_sequence::ReactionSequenceItemSequence,
     ) -> Self {
         Action {
@@ -54,7 +54,7 @@ impl Action {
         }
     }
 
-    pub fn new(devices: HashMap<String, Box<dyn DeviceTrait>>) -> Self {
+    pub fn new(devices: DevicesCollection) -> Self {
         Action {
             selected_device: Some(String::from("timer")),
             selected_action: None,

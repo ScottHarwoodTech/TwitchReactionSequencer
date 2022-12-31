@@ -5,6 +5,7 @@ use std::hash::Hash;
 
 use crate::sequencer::reaction_sequence::{self, ReactionSequence, ReactionSequenceTrigger};
 use crate::triggers::triggers::TriggerSource;
+use crate::triggers::TriggerCollection;
 
 // Drop down list of trigger sources,
 // Drop down list of actions on triggers
@@ -15,7 +16,7 @@ use crate::triggers::triggers::TriggerSource;
 pub struct Trigger {
     selected_trigger: Option<String>,
     selected_event: Option<String>,
-    triggers: HashMap<String, Box<dyn TriggerSource>>,
+    triggers: TriggerCollection,
     triggers_pick_list: pick_list::State<String>,
     action_pick_list: pick_list::State<String>,
 }
@@ -28,7 +29,7 @@ pub enum TriggerMessage {
 
 impl Trigger {
     pub fn from_existing(
-        triggers: HashMap<String, Box<dyn TriggerSource>>,
+        triggers: TriggerCollection,
         trigger: reaction_sequence::ReactionSequenceTrigger,
     ) -> Self {
         Trigger {
@@ -46,7 +47,7 @@ impl Trigger {
             trigger_id: self.selected_trigger.clone().unwrap_or_default(),
         }
     }
-    pub fn new(triggers: HashMap<String, Box<dyn TriggerSource>>) -> Self {
+    pub fn new(triggers: TriggerCollection) -> Self {
         Trigger {
             selected_trigger: Some(String::from("twitch_pub_sub")),
             selected_event: None,

@@ -2,22 +2,21 @@ mod application;
 pub mod fs_utils;
 mod panes;
 mod sequence;
-pub mod util;
 
 use std::collections::HashMap;
 
-use iced::{Application, Settings};
+use iced::{Application, Settings as IcedSettings};
 
-use crate::sequencer::device::DeviceTrait;
+use crate::sequencer::device::{DeviceTrait, DevicesCollection};
+use crate::settings::Settings;
+
 use crate::triggers::triggers::TriggerSource;
+use crate::triggers::TriggerCollection;
 
-pub fn ui(
-    devices: HashMap<String, Box<dyn DeviceTrait>>,
-    triggers: HashMap<String, Box<dyn TriggerSource>>,
-) {
-    application::Application::run(Settings {
+pub fn ui(devices: DevicesCollection, triggers: TriggerCollection, settings: Settings) {
+    application::Application::run(IcedSettings {
         exit_on_close_request: false,
-        ..Settings::with_flags((devices, triggers))
+        ..IcedSettings::with_flags((devices, triggers, settings))
     })
     .unwrap();
 }
