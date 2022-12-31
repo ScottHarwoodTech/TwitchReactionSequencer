@@ -4,7 +4,7 @@ jobs:
   clippy_check:
     runs-on: ubuntu-latest
     steps:
-      - run: apt-get install libdbus-1-dev pkg-config
+      - run: sudo apt-get install libdbus-1-dev pkg-config
       - uses: actions/checkout@v1
       - run: rustup component add clippy
       - uses: actions-rs/clippy-check@v1
