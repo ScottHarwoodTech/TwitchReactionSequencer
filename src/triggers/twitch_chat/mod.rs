@@ -10,7 +10,7 @@ use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
 use twitch_irc::TwitchIRCClient;
 
-use crate::sequencer::{QueueEvent};
+use crate::sequencer::QueueEvent;
 
 use super::{triggers::TriggerEvent, triggers::TriggerSource};
 

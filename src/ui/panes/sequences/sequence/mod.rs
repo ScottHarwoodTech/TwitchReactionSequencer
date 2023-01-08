@@ -2,7 +2,7 @@ pub mod action;
 pub mod trigger;
 
 use crate::custom_widgets::horizontal_scrollable::{self};
-use crate::sequencer::device::{DevicesCollection};
+use crate::sequencer::device::DevicesCollection;
 use crate::sequencer::reaction_sequence::{self, ReactionSequence};
 
 use crate::triggers::TriggerCollection;
@@ -10,7 +10,6 @@ use iced::{self, button, Button, Column, Text};
 use iced::{Element, Row};
 
 use std::path::PathBuf;
-
 
 use self::action::ActionMessage;
 use uuid;
@@ -137,10 +136,7 @@ impl Sequence {
 
         let mut r = Row::new().spacing(20);
 
-        let trigger: Element<_> = self
-            .trigger
-            .view()
-            .map(SequenceMessage::TriggerMessage);
+        let trigger: Element<_> = self.trigger.view().map(SequenceMessage::TriggerMessage);
 
         r = r.push(trigger);
 

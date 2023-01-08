@@ -1,4 +1,5 @@
-use crate::sequencer::device::{self, DeviceTrait};
+use crate::sequencer::device::{self, DeviceTrait, Parameter};
+use crate::sequencer::devices::DeviceTypes;
 
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -16,6 +17,7 @@ pub struct Timer {
     id: String,
     name: String,
     actions: HashMap<String, Box<dyn device::DeviceAction>>,
+    device_type: DeviceTypes,
 }
 
 impl Timer {
@@ -24,6 +26,7 @@ impl Timer {
             id,
             name,
             actions: create_actions(),
+            device_type: DeviceTypes::Timer,
         };
     }
 }
@@ -31,6 +34,18 @@ impl Timer {
 impl DeviceTrait for Timer {
     fn get_actions(&self) -> &HashMap<String, Box<dyn device::DeviceAction>> {
         &self.actions
+    }
+
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    fn get_device_type(&self) -> &super::DeviceTypes {
+        &self.device_type
+    }
+
+    fn get_device_parameters() -> Vec<device::Parameter> {
+        vec![]
     }
 }
 
@@ -42,10 +57,7 @@ struct Delay {
 
 impl Delay {
     pub fn new(id: String, name: String) -> Delay {
-        Delay {
-            id,
-            name,
-        }
+        Delay { id, name }
     }
 }
 
@@ -61,10 +73,9 @@ pub fn setup(
 ) -> HashMap<String, Box<dyn device::DeviceTrait>> {
     devices.insert(
         DEVICE_ID.to_string(),
-        Box::new(device::Device::new(
-            DEVICE_ID,
-            DEVICE_NAME,
-            create_actions(),
+        Box::new(Timer::new(
+            String::from(DEVICE_ID),
+            String::from(DEVICE_NAME),
         )),
     );
 

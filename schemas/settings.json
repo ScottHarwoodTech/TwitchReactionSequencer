@@ -16,25 +16,28 @@
                 "configured_devices": {
                     "type": "array",
                     "items": {
-                        "oneof": [
-                            {
-                                "type": "object",
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "description": "The friendly name of a device"
-                                    },
-                                    "id": {
-                                        "type": "string",
-                                        "description": "Id of the device"
-                                    },
-                                    "port": "string",
-                                    "type": {
-                                        "const": "BUNNY_EARS"
-                                    }
-                                }
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "id",
+                            "device_type"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "The friendly name of a device"
+                            },
+                            "id": {
+                                "type": "string",
+                                "description": "Id of the device"
+                            },
+                            "address": {
+                                "type": "string"
+                            },
+                            "device_type": {
+                                "type": "string"
                             }
-                        ]
+                        }
                     }
                 },
                 "configured_trigger_sources": {

@@ -3,22 +3,7 @@ use core::fmt;
 use serde_json;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
-pub struct Device {
-    id: String,
-    name: String,
-    actions: HashMap<String, Box<dyn DeviceAction>>,
-}
-
-impl Device {
-    pub fn new(id: &str, name: &str, actions: HashMap<String, Box<dyn DeviceAction>>) -> Device {
-        Device {
-            id: String::from(id),
-            name: String::from(name),
-            actions,
-        }
-    }
-}
+use crate::sequencer::devices::DeviceTypes;
 
 #[async_trait]
 pub trait DeviceAction: fmt::Debug + dyn_clone::DynClone + Send + Sync {
@@ -27,16 +12,27 @@ pub trait DeviceAction: fmt::Debug + dyn_clone::DynClone + Send + Sync {
 
 dyn_clone::clone_trait_object!(DeviceAction);
 
+#[derive(Debug, Clone)]
+pub enum ParameterName {
+    Address,
+}
+
+#[derive(Debug, Clone)]
+pub enum Parameter {
+    String(ParameterName), //Name, optional default
+}
+
 pub trait DeviceTrait: fmt::Debug + dyn_clone::DynClone + Send + Sync {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>>;
+    fn get_name(&self) -> &String;
+    fn get_device_type(&self) -> &DeviceTypes;
+    fn get_device_parameters() -> Vec<Parameter>
+    where
+        Self: Sized;
 }
 
 dyn_clone::clone_trait_object!(DeviceTrait);
 
-impl DeviceTrait for Device {
-    fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
-        &self.actions
-    }
-}
-
 pub type DevicesCollection = HashMap<String, Box<dyn DeviceTrait>>;
+
+pub type DeviceImpler = Box<dyn DeviceTrait>;

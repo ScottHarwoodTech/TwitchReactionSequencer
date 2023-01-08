@@ -1,0 +1,9 @@
+{
+    "tasks": [
+        {
+            "label": "Run current",
+            "type": "shell",
+            "command": "cargo run"
+        }
+    ]
+}

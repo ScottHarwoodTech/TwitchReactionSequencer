@@ -1,7 +1,11 @@
 pub mod device;
 pub mod devices;
 pub mod reaction_sequence;
+use self::{device::DevicesCollection, reaction_sequence::ReactionSequence};
+use crate::triggers::TriggerSource;
 use std::collections::HashMap;
+use std::error::Error;
+use tokio::sync::watch;
 
 impl reaction_sequence::ReactionSequence {
     pub async fn play(&self, device_set: &HashMap<String, Box<dyn device::DeviceTrait>>) {
@@ -34,20 +38,11 @@ fn get_device_by_id<'a>(
     return device_set.get(id);
 }
 
-use tokio::sync::watch;
-
 #[derive(Debug, Clone)]
 pub struct QueueEvent {
     pub trigger_source: TriggerSource,
     pub trigger_event_id: String,
 }
-
-use device::DeviceTrait;
-use std::error::Error;
-
-use crate::triggers::TriggerSource;
-
-use self::{device::DevicesCollection, reaction_sequence::ReactionSequence};
 
 pub async fn watch_queue(
     device_set: DevicesCollection,

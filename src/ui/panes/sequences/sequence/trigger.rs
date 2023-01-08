@@ -1,8 +1,6 @@
 use iced;
 use iced::{pick_list, Column, Element, PickList};
 
-
-
 use crate::sequencer::reaction_sequence::{self, ReactionSequenceTrigger};
 use crate::triggers::triggers::TriggerSource;
 use crate::triggers::TriggerCollection;

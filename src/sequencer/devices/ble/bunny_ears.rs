@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
-use crate::sequencer::device::{DeviceTrait, DevicesCollection};
+use crate::sequencer::device::{DeviceTrait, DevicesCollection, Parameter, ParameterName};
+use crate::sequencer::devices::DeviceTypes;
 use async_trait::async_trait;
-use btleplug::api::{Peripheral as _, WriteType};
+use btleplug::api::{BDAddr, Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 use uuid::Uuid;
 
@@ -87,17 +89,23 @@ pub struct BunnyEars {
     id: String,
     name: String,
     actions: HashMap<String, Box<dyn DeviceAction>>,
+    device_type: DeviceTypes,
 }
 
 impl BunnyEars {
-    pub async fn new(id: String, name: String, peripherals: &Vec<Peripheral>) -> Self {
-        let microbit = find_mb(peripherals).await.unwrap(); //TODO: Handle is none
-                                                            //TODO: Recreate as find device by id?
+    pub async fn new(
+        id: String,
+        name: String,
+        address: String,
+        peripherals: &Vec<Peripheral>,
+    ) -> Self {
+        let microbit = find_mb(peripherals, address).await.unwrap(); //TODO: Handle is none
 
         BunnyEars {
             id,
             name,
             actions: create_actions(&microbit),
+            device_type: DeviceTypes::BunnyEars,
         }
     }
 }
@@ -106,19 +114,33 @@ impl DeviceTrait for BunnyEars {
     fn get_actions(&self) -> &HashMap<String, Box<dyn DeviceAction>> {
         &self.actions
     }
+
+    fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    fn get_device_type(&self) -> &crate::sequencer::devices::DeviceTypes {
+        &self.device_type
+    }
+
+    fn get_device_parameters() -> Vec<crate::sequencer::device::Parameter> {
+        vec![Parameter::String(ParameterName::Address)]
+    }
 }
 
 pub async fn setup(
     mut devices: DevicesCollection,
     peripherals: Vec<Peripheral>,
 ) -> DevicesCollection {
-    let mb = find_mb(&peripherals).await.unwrap();
+    let mb = find_mb(&peripherals, String::from("EB:A0:B4:C2:82:C8"))
+        .await
+        .unwrap();
     println!("found mb");
     devices.insert(
         DEVICE_ID.to_string(),
         Box::new(ble_device::BleDevice::new(
-            DEVICE_ID,
-            DEVICE_NAME,
+            String::from(DEVICE_ID),
+            String::from(DEVICE_NAME),
             create_actions(&mb),
         )),
     );
@@ -126,15 +148,10 @@ pub async fn setup(
     devices
 }
 
-async fn find_mb(peripherals: &Vec<Peripheral>) -> Option<Peripheral> {
+async fn find_mb(peripherals: &Vec<Peripheral>, address: String) -> Option<Peripheral> {
     for p in peripherals {
-        if p.properties()
-            .await
-            .unwrap()
-            .unwrap()
-            .local_name
-            .iter()
-            .any(|name| name.contains("BBC micro:bit"))
+        if p.properties().await.unwrap().unwrap().address
+            == BDAddr::from_str(address.as_str()).unwrap()
         {
             return Some(p.clone());
         }

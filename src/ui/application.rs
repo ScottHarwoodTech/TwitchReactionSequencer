@@ -3,18 +3,17 @@ use super::panes::{
     settings::{Component, SettingsMessage, SettingsPane},
 };
 use crate::{
-    sequencer::device::{DevicesCollection},
-    settings::Settings,
-    triggers::{TriggerCollection},
+    sequencer::device::DevicesCollection, settings::Settings, triggers::TriggerCollection,
 };
 use iced::{button, Button, Column, Command, Row, Text};
-
+use iced_native::{window, Event};
 
 #[derive(Debug)]
 pub enum Application {
     Loading,
     Sequences(State),
     Settings(State),
+    ShouldExit,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +97,7 @@ impl iced::Application for Application {
     fn should_exit(&self) -> bool {
         match self {
             Application::Sequences(state) => state.sequences.should_exit(),
+            Application::ShouldExit => true,
             _ => false,
         }
     }
@@ -128,15 +128,32 @@ impl iced::Application for Application {
             Application::Loading => Command::none(),
 
             Application::Sequences(state) => match message {
-                Message::EventOccurred(e) => {
-                    state.sequences.update(SequencesMessage::EventOccurred(e))
-                }
+                Message::EventOccurred(e) => state
+                    .sequences
+                    .update(SequencesMessage::EventOccurred(e))
+                    .map(Message::SequencesMessage),
                 Message::SequencesMessage(sequences_message) => {
-                    state.sequences.update(sequences_message)
+                    { state.sequences.update(sequences_message) }.map(Message::SequencesMessage)
+                }
+                Message::SettingsMessage(settings_message) => {
+                    { state.settings.update(settings_message) }.map(Message::SettingsMessage)
+                }
+                Message::ChangePane(_) => Command::none(),
+            },
+
+            Application::Settings(state) => match message {
+                Message::SettingsMessage(settings_message) => {
+                    state.settings.update(settings_message)
+                }
+                Message::EventOccurred(event) => {
+                    if Event::Window(window::Event::CloseRequested) == event {
+                        *self = Application::ShouldExit
+                    }
+                    return Command::none();
                 }
                 _ => Command::none(),
             }
-            .map(Message::SequencesMessage),
+            .map(Message::SettingsMessage),
             _ => Command::none(),
         }
     }
@@ -154,6 +171,7 @@ impl iced::Application for Application {
                 page = page.push(header(&mut state.buttons));
                 page = page.push(state.settings.view().map(Message::SettingsMessage));
             }
+            Application::ShouldExit => {}
         }
 
         page.into()

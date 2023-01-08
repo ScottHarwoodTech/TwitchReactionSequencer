@@ -30,3 +30,4 @@ dyn-clone="*"
 
 schemafy="*"
 twitch-irc = "5.0.0"
+jsonschema = "0.16.1"

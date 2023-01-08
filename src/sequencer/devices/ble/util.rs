@@ -1,4 +1,4 @@
-use crate::sequencer::device::{DevicesCollection};
+use crate::sequencer::device::DevicesCollection;
 use crate::sequencer::devices::ble::bunny_ears;
 use btleplug::api::{Central, Manager as _, ScanFilter};
 use btleplug::platform::{Manager, Peripheral};

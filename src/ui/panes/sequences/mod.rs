@@ -4,8 +4,8 @@ use crate::sequencer::reaction_sequence::ReactionSequence;
 
 use crate::triggers::TriggerCollection;
 use crate::ui::fs_utils::LoadError;
+use crate::ui::fs_utils::SaveError;
 use crate::{sequencer, triggers, ThreadActions};
-use crate::{ui::fs_utils::SaveError};
 use futures_util::select;
 use futures_util::{future, FutureExt};
 
@@ -16,7 +16,6 @@ use iced::{Command, Element};
 use iced_native::{window, Event};
 use sequence::{Sequence, SequenceMessage};
 use tokio::sync::watch;
-
 
 use tokio::fs;
 
@@ -62,7 +61,6 @@ pub enum Sequences {
 
 pub async fn bury(v: tokio::sync::mpsc::Sender<ThreadActions>) {
     v.send(ThreadActions::Stop).await.unwrap();
-    
 }
 
 impl Sequences {

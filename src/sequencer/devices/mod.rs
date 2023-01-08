@@ -1,7 +1,6 @@
 pub mod ble;
 pub mod timer;
 
-
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -16,16 +15,19 @@ pub async fn setup_devices() -> Result<DevicesCollection, Box<dyn Error>> {
     Ok(device_set)
 }
 
+#[derive(Debug, Clone)]
 pub enum DeviceTypes {
     BunnyEars,
-    Delay,
+    Timer,
+    BleDevice,
 }
 
 impl DeviceTypes {
-    pub fn from_string(value: &str) -> Self {
-        match value {
+    pub fn from_string(value: &String) -> Self {
+        match value.as_str() {
             "BUNNY_EARS" => DeviceTypes::BunnyEars,
-            "DELAY" => DeviceTypes::Delay,
+            "TIMER" => DeviceTypes::Timer,
+            "BLE_DEVICE" => DeviceTypes::BleDevice,
             _ => panic!("Invalid"),
         }
     }

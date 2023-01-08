@@ -1,0 +1,15 @@
+[
+    {
+        "key": "F5",
+        "command": "-workbench.action.debug.start"
+    },
+    {
+        "key": "F5",
+        "command": "-workbench.action.debug.continue"
+    },
+    {
+        "key": "F5",
+        "command": "workbench.action.tasks.runTask",
+        "args": "Run current"
+    }
+]

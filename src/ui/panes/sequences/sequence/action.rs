@@ -1,8 +1,7 @@
 use iced::{self, button, Button, Text};
 use iced::{pick_list, Column, Element, PickList};
 
-
-use crate::sequencer::device::{DeviceTrait, DevicesCollection};
+use crate::sequencer::device::DevicesCollection;
 use crate::sequencer::reaction_sequence::{self, ReactionSequenceItemSequence};
 
 // Drop down list of trigger sources,
